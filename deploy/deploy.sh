@@ -30,6 +30,28 @@ fi
 echo "==> Building & starting containers…"
 docker compose up -d --build
 
+# Postgres bakes POSTGRES_PASSWORD into its data volume on first init and
+# ignores it afterwards. If .env's DB_PASSWORD ever differs from the value the
+# volume was created with, the app gets 'password authentication failed'.
+# Re-sync the role's password to .env on every deploy so app and DB never drift
+# (local socket inside the container is trust-auth, so no password is needed to
+# run this). This makes deploys self-healing without wiping data.
+if [ -f .env ]; then
+  DBPW="$(grep -E '^DB_PASSWORD=' .env | head -1 | cut -d= -f2- | tr -d '\r\n')"
+  if [ -n "$DBPW" ]; then
+    echo "==> Syncing DB role password to .env…"
+    for i in $(seq 1 15); do
+      if docker compose exec -T db pg_isready -U voyage -d voyage > /dev/null 2>&1; then break; fi
+      sleep 2
+    done
+    docker compose exec -T -e V="$DBPW" db \
+      psql -U voyage -d voyage -v ON_ERROR_STOP=1 \
+      -c "ALTER USER voyage WITH PASSWORD :'V';" \
+      && docker compose restart app \
+      || echo "   (password sync skipped — will rely on existing credentials)"
+  fi
+fi
+
 echo "==> Configuring nginx…"
 # don't clobber a certbot-managed config on re-deploys
 if [ ! -f /etc/nginx/sites-available/voyage ] || ! grep -q 'managed by Certbot' /etc/nginx/sites-available/voyage; then
