@@ -39,6 +39,22 @@ ln -sf /etc/nginx/sites-available/voyage /etc/nginx/sites-enabled/voyage
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 
+echo "==> Waiting for the app to become healthy…"
+healthy=false
+for i in $(seq 1 20); do
+  if curl -sf localhost:4000/api/health > /dev/null 2>&1; then
+    healthy=true
+    echo "   app healthy after ${i} tries"
+    break
+  fi
+  sleep 2
+done
+if [ "$healthy" != true ]; then
+  echo "⚠️  App нь 4000 порт дээр хариу өгсөнгүй. Сүүлийн лог:"
+  docker compose logs --tail=40 app || true
+  echo "   DB нууц үг зөрүүлбэл (өмнөх volume): docker compose down -v && docker compose up -d --build"
+fi
+
 echo
 echo "✔ Deploy complete."
 echo "  App:      http://$(hostname -I | awk '{print $1}')/"
