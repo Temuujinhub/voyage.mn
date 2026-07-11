@@ -1,0 +1,32 @@
+{
+  "name": "voyage-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/index.js",
+    "migrate": "node src/db/migrate.js",
+    "seed": "node src/db/seed.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "helmet": "^8.2.0",
+    "imapflow": "^1.4.7",
+    "jsonwebtoken": "^9.0.3",
+    "mailparser": "^3.9.14",
+    "multer": "^2.2.0",
+    "pdfkit": "^0.19.1",
+    "pg": "^8.22.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.3"
+  }
+}

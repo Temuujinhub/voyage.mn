@@ -1,0 +1,140 @@
+/* ─── Boarding pass — printed ATB look ─────────────────────────────────────
+   Real-card proportions (ATB2 ≈ 187×83mm). Paper texture, perforated stub,
+   dot-matrix style data fields. */
+.bp {
+  --bp-ink: #14232f;
+  --bp-navy: #0e2a47;
+  --bp-blue: #1b84c4;
+  width: 187mm;
+  min-height: 83mm;
+  background:
+    repeating-linear-gradient(0deg, rgba(14, 42, 71, 0.012) 0 1px, transparent 1px 3px),
+    linear-gradient(160deg, #fdfefe 0%, #f6f8fa 55%, #eef2f5 100%);
+  border: 1px solid #d3dbe2;
+  border-radius: 10px;
+  box-shadow: 0 1px 0 #fff inset, 0 14px 34px rgba(14, 42, 71, 0.22);
+  overflow: hidden;
+  color: var(--bp-ink);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  margin: 0 auto;
+  position: relative;
+}
+.bp .mono { font-family: 'OCR-B', ui-monospace, 'Cascadia Mono', 'Courier New', monospace; letter-spacing: 0.4px; }
+
+.bp-head {
+  background: linear-gradient(90deg, var(--bp-navy) 0%, #123a5f 70%, #16497a 100%);
+  color: #fff; display: flex; align-items: center; padding: 4mm 6mm; gap: 10px;
+}
+.bp-logo { display: flex; align-items: center; gap: 8px; font-size: 16px; letter-spacing: 1.6px; }
+.bp-logo svg { color: #9ecdec; }
+.bp-head-title { margin-left: auto; text-align: right; line-height: 1.15; }
+.bp-head-title span { font-size: 13px; font-weight: 800; letter-spacing: 3px; }
+.bp-head-title small { display: block; font-size: 8.5px; color: #9db8d2; letter-spacing: 2px; }
+
+.bp-body { display: flex; align-items: stretch; }
+.bp-main { flex: 1; padding: 4mm 4mm 3.5mm 6mm; min-width: 0; overflow: hidden; }
+
+.bp-route { display: flex; align-items: center; gap: 4mm; margin-bottom: 3mm; }
+.bp-airport .code { font-size: 34px; font-weight: 850; color: var(--bp-navy); font-family: ui-monospace, monospace; line-height: 1; }
+.bp-airport .city { font-size: 8.5px; color: #63788a; max-width: 34mm; margin-top: 1mm; }
+.bp-airport.right { text-align: right; }
+.bp-airport.right .city { margin-left: auto; }
+.bp-route-mid { flex: 1; text-align: center; }
+.bp-flightno { font-size: 11px; font-weight: 800; color: var(--bp-blue); font-family: ui-monospace, monospace; }
+.bp-date { font-size: 8.5px; color: #63788a; letter-spacing: 1px; }
+
+.bp-row { display: flex; gap: 2.4mm; margin-bottom: 2.5mm; align-items: flex-end; }
+.bp-field { min-width: 0; }
+.bp-field label { display: block; font-size: 6.4px; font-weight: 800; letter-spacing: 0.9px; color: #7d92a4; margin-bottom: 0.8mm; white-space: nowrap; }
+.bp-field .val { font-size: 11.5px; font-weight: 700; color: var(--bp-ink); white-space: nowrap; }
+.bp-field .val.sm { font-size: 10px; }
+.bp-field .val.big { font-size: 15px; }
+.bp-field.grow { flex: 1; min-width: 0; }
+.bp-field.grow .val { overflow: hidden; text-overflow: ellipsis; }
+.bp-datarow { border-top: 1px dashed #c8d3dd; padding-top: 2.5mm; flex-wrap: nowrap; }
+.bp-field.seat { margin-left: auto; text-align: right; flex: 0 0 auto; }
+.bp-field .seat-val {
+  font-size: 20px; font-weight: 850; color: #fff; background: var(--bp-blue);
+  border-radius: 2.5mm; padding: 0.5mm 2.6mm; display: inline-block; line-height: 1.25;
+  box-shadow: 0 2px 6px rgba(27, 132, 196, 0.4);
+}
+
+.bp-foot { display: flex; gap: 4mm; align-items: flex-start; border-top: 1px dashed #c8d3dd; padding-top: 2.5mm; }
+.bp-qr img { width: 21mm; height: 21mm; display: block; image-rendering: pixelated; }
+.bp-fine { flex: 1; }
+.bp-seqline { display: flex; gap: 5mm; font-size: 8.5px; font-weight: 800; color: #4a6070; font-family: ui-monospace, monospace; letter-spacing: 1px; }
+.bp-fine p { font-size: 7.5px; color: #7d92a4; line-height: 1.5; margin: 1.5mm 0 0; }
+.bp-delay { font-size: 8.5px; color: #a5690f; font-weight: 700; margin-top: 1mm; }
+
+/* perforation between coupon and stub */
+.bp-perf {
+  width: 0; border-left: 2px dashed #b6c4d0; position: relative; margin: 0 1px;
+}
+.bp-perf .notch {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  width: 6mm; height: 3mm; background: var(--bg, #f2f5f9); border: 1px solid #d3dbe2;
+}
+.bp-perf .notch.top { top: -1px; border-radius: 0 0 6mm 6mm; border-top: none; }
+.bp-perf .notch.bottom { bottom: -1px; border-radius: 6mm 6mm 0 0; border-bottom: none; }
+
+.bp-stub { width: 52mm; flex: 0 0 52mm; padding: 3.5mm 4mm; background: rgba(27, 132, 196, 0.04); }
+.bp-stub-head { font-size: 7px; font-weight: 800; letter-spacing: 1.6px; color: #7d92a4; margin-bottom: 2mm; }
+.bp-stub .bp-field .val { overflow: hidden; text-overflow: ellipsis; }
+.bp-stub-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6mm 3mm; margin-top: 1.5mm; }
+.bp-stub-qr img { width: 15mm; height: 15mm; margin-top: 1.5mm; image-rendering: pixelated; }
+.bp-stub-pnr { font-size: 9px; font-weight: 800; color: #4a6070; margin-top: 1mm; }
+
+/* compact screen preview (phone) */
+.bp-wrap-scale { transform-origin: top left; }
+
+/* ─── Baggage tag — IATA 740, 470×51mm thermal stock ─────────────────────── */
+.tag {
+  width: 470mm; height: 51mm; background: #fff; color: #10202e;
+  display: flex; align-items: stretch; overflow: hidden;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  border: 1px dashed #c8d3dd; /* stock outline on screen; invisible area on print */
+  position: relative;
+}
+.tag * { min-width: 0; }
+.tag .sec { border-right: 1.6px dashed #9fb0be; display: flex; flex-direction: column; padding: 2.5mm 3mm; position: relative; }
+.tag .adhesive { flex: 0 0 42mm; background: repeating-linear-gradient(45deg, #eef2f5 0 4mm, #e4eaef 4mm 8mm); }
+.tag .adhesive .lbl { margin: auto; transform: rotate(-90deg); font-size: 8px; letter-spacing: 2px; color: #8fa1af; white-space: nowrap; }
+.tag .barcode-v { display: flex; align-items: center; justify-content: center; flex: 0 0 34mm; padding: 1.5mm; }
+.tag .barcode-v svg { transform: rotate(90deg); width: 44mm; max-width: none; }
+.tag .main { flex: 1; display: flex; flex-direction: row; gap: 4mm; align-items: center; }
+.tag .dest-code { font-size: 64px; font-weight: 900; font-family: ui-monospace, monospace; line-height: 0.95; color: #0e2a47; }
+.tag .dest-name { font-size: 10px; color: #4a6070; font-weight: 700; letter-spacing: 1px; }
+.tag .meta { display: grid; grid-template-columns: auto auto; gap: 1mm 6mm; font-size: 10.5px; align-content: center; }
+.tag .meta label { font-size: 6.5px; font-weight: 800; color: #7d92a4; letter-spacing: 1px; display: block; }
+.tag .meta b { font-family: ui-monospace, monospace; font-size: 12px; white-space: nowrap; }
+.tag .airline-band {
+  writing-mode: vertical-rl; text-orientation: mixed; background: #0e2a47; color: #fff;
+  font-size: 11px; font-weight: 800; letter-spacing: 2.5px; padding: 2mm 1.5mm;
+  display: flex; align-items: center; justify-content: center; flex: 0 0 9mm;
+}
+.tag .barcode-h { display: flex; flex-direction: column; justify-content: center; align-items: center; flex: 0 0 62mm; gap: 1mm; }
+.tag .barcode-h svg { width: 56mm; }
+.tag .tagnum { font-family: ui-monospace, monospace; font-size: 13px; font-weight: 800; letter-spacing: 2px; }
+.tag .stub { flex: 0 0 55mm; }
+.tag .stub .t { font-size: 7px; font-weight: 800; letter-spacing: 1.5px; color: #7d92a4; }
+.tag .stub svg { width: 44mm; margin: 1mm auto; }
+.tag .stub .nm { font-size: 9px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* screen preview scaling */
+.tag-preview { overflow-x: auto; padding: 8px 0 14px; }
+.tag-preview .tag { transform: scale(0.62); transform-origin: top left; }
+.tag-preview-inner { width: calc(470mm * 0.62); height: calc(51mm * 0.62); }
+
+/* ─── Print isolation ─────────────────────────────── */
+@media print {
+  body.print-mode { background: #fff !important; }
+  body.print-mode #root { display: none !important; }
+  body.print-mode .print-area {
+    display: block !important; position: absolute; left: 0; top: 0; margin: 0;
+  }
+  body.print-mode .bp { box-shadow: none; border-radius: 0; border: none; }
+  body.print-mode .tag { border: none; transform: none !important; }
+  body.print-mode .tag-preview { overflow: visible; padding: 0; }
+  body.print-mode .tag-preview-inner { width: auto; height: auto; }
+}
+.print-area { display: none; }
