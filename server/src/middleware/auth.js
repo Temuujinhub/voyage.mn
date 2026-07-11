@@ -3,7 +3,10 @@ import cfg from '../config.js';
 
 export function signStaffToken(user) {
   return jwt.sign(
-    { sub: user.id, username: user.username, role: user.role, name: user.full_name, kind: 'staff' },
+    {
+      sub: user.id, username: user.username, role: user.role,
+      name: user.full_name, station: user.station || null, kind: 'staff',
+    },
     cfg.jwtSecret,
     { expiresIn: cfg.jwtExpires }
   );
@@ -22,7 +25,7 @@ export function authRequired(req, res, next) {
   try {
     const payload = jwt.verify(token, cfg.jwtSecret);
     if (payload.kind !== 'staff') return res.status(401).json({ error: 'Invalid token kind' });
-    req.user = { id: payload.sub, username: payload.username, role: payload.role, name: payload.name };
+    req.user = { id: payload.sub, username: payload.username, role: payload.role, name: payload.name, station: payload.station || null };
     next();
   } catch {
     return res.status(401).json({ error: 'Токен хүчингүй эсвэл хугацаа дууссан' });

@@ -23,26 +23,32 @@ export async function requestOtp(phone) {
     [phone, hash, String(ttl)]
   );
 
-  if (settings.otp.mode === 'sms_gateway' && settings.sms_gateway.enabled && settings.sms_gateway.url) {
-    // Pluggable HTTP SMS gateway: POST {to, text} with bearer key. The exact
-    // provider (Mobicom/Unitel/Skytel corporate gateway) is configured in Settings.
+  const gw = settings.sms_gateway;
+  if (settings.otp.mode === 'sms_gateway' && gw.enabled && gw.api_key) {
+    // CallPro Text API: POST {base_url}/send with x-api-key header.
+    // 8-digit numbers work directly; +976-prefixed also accepted by the API.
+    const text = `Voyage check-in code: ${code}. ${ttl} минутын дотор ашиглана уу.`;
     try {
-      await fetch(settings.sms_gateway.url, {
+      const res = await fetch(`${(gw.base_url || 'https://api-text.callpro.mn/v1/sms').replace(/\/$/, '')}/send`, {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${settings.sms_gateway.api_key}`,
-        },
+        headers: { 'content-type': 'application/json', 'x-api-key': gw.api_key },
         body: JSON.stringify({
-          to: phone,
-          text: `Voyage check-in code: ${code}. ${ttl} минутын дотор ашиглана уу.`,
+          from: gw.from,
+          to: phone.replace(/^\+976/, ''), // local 8-digit format
+          text,
+          ...(gw.brand ? { brand: gw.brand } : {}),
         }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.error('CallPro SMS error:', res.status, data.error || data.reason || '');
+        throw new Error(data.error || `SMS gateway ${res.status}`);
+      }
+      return { sent: true, messageId: data.message_id };
     } catch (err) {
       console.error('SMS gateway error:', err.message);
       throw new Error('СМС илгээхэд алдаа гарлаа. Түр хүлээгээд дахин оролдоно уу.');
     }
-    return { sent: true };
   }
   // dev mode: code is returned to the client so the flow is fully testable
   // before an SMS gateway is connected.

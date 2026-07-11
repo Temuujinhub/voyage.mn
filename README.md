@@ -46,13 +46,52 @@ cd client && npm install && npm run dev                 # :5173 (proxy → 4000)
 
 ## Production deploy (DigitalOcean droplet)
 
+### Авто-deploy (санал болгох арга) — main руу merge хиймэгц шууд гарна
+
+`.github/workflows/deploy.yml` нь `main` branch руу push/merge болмогц droplet руу
+rsync-ээр код илгээж, docker compose-оор дахин build хийнэ. Нэг удаа л тохируулна:
+
+1. Droplet дээр deploy key үүсгэх (өөрийн компьютерээс):
+   ```bash
+   ssh-keygen -t ed25519 -f voyage_deploy -N ""       # 2 файл үүснэ
+   ssh root@157.245.203.209 "cat >> ~/.ssh/authorized_keys" < voyage_deploy.pub
+   ```
+2. GitHub → repo **Settings → Secrets and variables → Actions → New repository secret** дээр дараах 7 secret-ийг нэмнэ:
+
+   | Secret | Утга |
+   |---|---|
+   | `DROPLET_HOST` | `157.245.203.209` |
+   | `DROPLET_USER` | `root` |
+   | `DROPLET_SSH_KEY` | `voyage_deploy` файлын **бүтэн агуулга** (private key) |
+   | `DB_PASSWORD` | `openssl rand -hex 24` |
+   | `JWT_SECRET` | `openssl rand -hex 32` |
+   | `QR_SECRET` | `openssl rand -hex 32` |
+   | `ADMIN_PASSWORD` | Анхны админ нууц үг (өөрөө зохионо) |
+
+3. Болоо. Одоо main руу merge бүр автоматаар deploy хийнэ (Actions таб дээр явцыг харна).
+   Сервер дээрх `.env` анхны deploy үед secrets-ээс автоматаар үүснэ.
+
+### Гараар deploy (эхний удаа эсвэл CI ашиглахгүй бол)
+
 ```bash
 ssh root@157.245.203.209
 git clone https://github.com/Temuujinhub/voyage.mn.git /opt/voyage
 cd /opt/voyage
-cp .env.example .env && nano .env        # DB_PASSWORD, JWT_SECRET, QR_SECRET, ADMIN_PASSWORD
+cp .env.example .env && nano .env        # доорх зааврын дагуу бөглөнө
 bash deploy/deploy.sh                    # docker + nginx + firewall бүгдийг тохируулна
 ```
+
+### .env бөглөх заавар
+
+```ini
+DB_PASSWORD=      # openssl rand -hex 24  → Postgres нууц үг (дотоод, хэнд ч өгөхгүй)
+JWT_SECRET=       # openssl rand -hex 32  → нэвтрэлтийн токений түлхүүр
+QR_SECRET=        # openssl rand -hex 32  → boarding pass QR гарын үсгийн түлхүүр
+ADMIN_PASSWORD=   # анхны админ (admin) хэрэглэгчийн нууц үг — эхний нэвтрэлтийн дараа солино
+PUBLIC_BASE_URL=https://voyage.mn
+```
+⚠️ `JWT_SECRET`/`QR_SECRET`-ийг дараа нь солибол бүх нэвтрэлт болон хэвлэгдсэн
+boarding pass-ууд хүчингүй болно — нислэгийн дундуур бүү солиорой.
 
 Домэйн холбох (дараа нь): voyage.mn-ийн **A бичлэгийг** `157.245.203.209` рүү заагаад:
 
@@ -81,7 +120,14 @@ certbot --nginx -d voyage.mn -d www.voyage.mn
 | Manifest цонх | 24ц / 3ц хязгаарууд |
 | Ачааны норм | Үнэгүй кг, илүү кг-ийн тариф |
 | IMAP | Manifest хүлээн авах mailbox (хост, порт, хэрэглэгч, нууц үг, зөвшөөрөгдсөн илгээгчид) |
-| OTP / SMS | `dev` горим (туршилт) эсвэл SMS gateway URL + API key |
+| OTP / SMS | `dev` горим (туршилт) эсвэл **CallPro Text API** — x-api-key, илгээгч дугаар (72xxxxxx). Баримт: `docs/CallPro_Text_API.txt` |
+
+**Ажилтны буудал (station):** Хэрэглэгч бүрт UB (Чингис хаан) эсвэл OT (Ханбумбат) буудал
+оноож болно — тухайн ажилтан нэвтрэхэд Check-in болон Gate дэлгэцүүд өөрийн буудлын
+нислэгүүдээр автоматаар шүүгдэнэ. Буудалгүй хэрэглэгч бүх нислэгийг харна.
+
+**Загварын сан:** `docs/design/` дотор 70+ брэндийн дизайн системийн тодорхойлолт
+(VoltAgent/awesome-design-md, MIT) багтсан — UI хөгжүүлэлтэд лавлагаа болгож ашиглана.
 
 ## Стандартууд
 

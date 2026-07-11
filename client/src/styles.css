@@ -15,13 +15,13 @@
   --teal-bg: #e0f2f4;
   --red: #c0392b;
   --red-bg: #fae9e7;
-  --ink: #1c2b36;
+  --ink: #16283a;
   --muted: #5b6b78;
   --faint: #8fa1af;
-  --line: #dde5ec;
-  --bg: #f2f5f9;
+  --line: #e3e8ee;
+  --bg: #f6f9fc;
   --card: #ffffff;
-  --shadow: 0 1px 2px rgba(14, 42, 71, 0.06), 0 4px 16px rgba(14, 42, 71, 0.07);
+  --shadow: 0 1px 2px rgba(14, 42, 71, 0.05), 0 3px 12px rgba(14, 42, 71, 0.06);
   --shadow-lg: 0 6px 32px rgba(14, 42, 71, 0.16);
   --radius: 12px;
   --font: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', sans-serif;
@@ -37,7 +37,8 @@ body {
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3, h4 { margin: 0; font-weight: 650; color: var(--navy); }
+h1, h2, h3, h4 { margin: 0; font-weight: 680; color: var(--navy); letter-spacing: -0.02em; }
+:focus-visible { outline: 2.5px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
 a { color: var(--blue-dark); text-decoration: none; }
 button { font-family: inherit; }
 
@@ -88,7 +89,7 @@ button { font-family: inherit; }
 .content { padding: 22px 24px 40px; max-width: 1440px; width: 100%; margin: 0 auto; }
 
 .page-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
-.page-head h1 { font-size: 21px; }
+.page-head h1 { font-size: 22px; letter-spacing: -0.4px; }
 .page-head .spacer { flex: 1; }
 
 /* ─── Cards, stats ──────────────────────────────── */
@@ -100,7 +101,14 @@ button { font-family: inherit; }
 .stat {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
   box-shadow: var(--shadow); padding: 15px 18px; position: relative; overflow: hidden;
+  transition: box-shadow 0.15s;
 }
+.stat::before {
+  content: ''; position: absolute; inset: 0 0 auto 0; height: 3px;
+  background: linear-gradient(90deg, var(--blue), var(--navy-3));
+  opacity: 0.85;
+}
+.stat:hover { box-shadow: 0 3px 6px rgba(14, 42, 71, 0.08), 0 8px 24px rgba(14, 42, 71, 0.09); }
 .stat .label { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; color: var(--faint); text-transform: uppercase; }
 .stat .value { font-size: 27px; font-weight: 750; color: var(--navy); margin-top: 6px; font-variant-numeric: tabular-nums; }
 .stat .value small { font-size: 15px; color: var(--faint); font-weight: 600; }
@@ -112,7 +120,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .tbl th {
   text-align: left; font-size: 10.5px; letter-spacing: 0.9px; text-transform: uppercase;
   color: var(--faint); font-weight: 700; padding: 10px 12px; border-bottom: 1px solid var(--line);
-  white-space: nowrap;
+  white-space: nowrap; background: #fafcfe; position: sticky; top: 0; z-index: 1;
 }
 .tbl td { padding: 11px 12px; border-bottom: 1px solid #ecf1f6; vertical-align: middle; }
 .tbl tr:last-child td { border-bottom: none; }
@@ -136,10 +144,13 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
   border: 1px solid transparent; border-radius: 9px; padding: 8px 15px;
-  font-size: 13.5px; font-weight: 600; cursor: pointer; transition: 0.12s;
+  font-size: 13.5px; font-weight: 600; cursor: pointer;
+  transition: background 0.12s, box-shadow 0.12s, transform 0.06s;
   background: var(--blue); color: #fff; text-decoration: none;
+  box-shadow: 0 1px 2px rgba(14, 42, 71, 0.12);
 }
 .btn:hover { background: var(--blue-dark); }
+.btn:active { transform: translateY(0.5px); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn.secondary { background: var(--card); color: var(--navy); border-color: var(--line); }
 .btn.secondary:hover { background: var(--sky); }
@@ -238,8 +249,9 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
   padding: 40px 16px 60px;
   background:
-    radial-gradient(1100px 380px at 70% -10%, rgba(27, 132, 196, 0.25), transparent 60%),
-    radial-gradient(800px 340px at 10% 110%, rgba(27, 132, 196, 0.12), transparent 60%),
+    radial-gradient(1100px 380px at 70% -10%, rgba(57, 183, 233, 0.28), transparent 60%),
+    radial-gradient(700px 300px at 105% 45%, rgba(36, 58, 143, 0.5), transparent 65%),
+    radial-gradient(800px 340px at 10% 110%, rgba(27, 132, 196, 0.16), transparent 60%),
     var(--navy);
 }
 .hero-card {

@@ -21,7 +21,15 @@ export const DEFAULT_SETTINGS = {
   baggage: { free_allowance_kg: 15, excess_fee_per_kg: 2500, currency: 'MNT' },
   checkin: { open_hours_before: 24, close_minutes_before: 30 },
   otp: { mode: 'dev', ttl_minutes: 5 }, // dev | sms_gateway
-  sms_gateway: { url: '', api_key: '', enabled: false },
+  // CallPro Text API (api-text.callpro.mn) — see docs/CallPro_Text_API.md
+  sms_gateway: {
+    provider: 'callpro',
+    base_url: 'https://api-text.callpro.mn/v1/sms',
+    api_key: '',
+    from: '', // sender number, e.g. 72xxxxxx
+    brand: '',
+    enabled: false,
+  },
   imap: {
     enabled: false,
     host: '',

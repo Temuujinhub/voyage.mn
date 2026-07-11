@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <clipPath id="c"><circle cx="100" cy="100" r="96"/></clipPath>
+    <path id="arc" d="M 18 100 A 84 84 0 0 0 178 136" fill="none"/>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="#39b7e9"/>
+  <g clip-path="url(#c)">
+    <!-- white head + neck silhouette -->
+    <path fill="#ffffff" d="
+      M 78 16
+      C 112 4 144 22 152 52
+      C 158 76 152 100 148 124
+      C 145 148 147 174 151 200
+      L 62 200
+      C 68 172 66 148 58 130
+      C 52 116 42 108 34 99
+      C 28 92 26 86 29 80
+      C 24 72 27 63 36 61
+      C 40 48 50 36 62 27
+      C 67 22 72 18 78 16 Z"/>
+    <!-- hooked beak -->
+    <path fill="#ffffff" stroke="#243a8f" stroke-width="6" stroke-linejoin="round" d="
+      M 44 60
+      C 32 54 20 58 16 68
+      C 13 78 20 87 30 88
+      C 27 94 30 101 38 101
+      C 46 101 51 93 52 86"/>
+    <path fill="none" stroke="#243a8f" stroke-width="4.5" stroke-linecap="round" d="M 20 82 C 34 84 48 88 58 96"/>
+    <!-- fierce brow: slanted heavy stroke from beak over the eye -->
+    <path fill="none" stroke="#243a8f" stroke-width="10" stroke-linecap="round" d="M 42 60 C 62 50 88 48 104 56"/>
+    <!-- eye tucked under brow -->
+    <circle cx="80" cy="70" r="14" fill="#243a8f"/>
+    <circle cx="80" cy="70" r="8" fill="#ffffff"/>
+    <circle cx="77" cy="67" r="4.2" fill="#243a8f"/>
+    <!-- crown/neck sweep -->
+    <path fill="none" stroke="#243a8f" stroke-width="7" stroke-linecap="round" d="
+      M 78 16
+      C 112 4 144 22 152 52
+      C 158 76 152 100 148 124
+      C 145 148 147 174 151 200"/>
+  </g>
+  <text font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="bold" fill="#243a8f" letter-spacing="2">
+    <textPath href="#arc" startOffset="8">AERO MONGOLIA</textPath>
+  </text>
+</svg>

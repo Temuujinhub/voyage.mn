@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, NavLink, Navigate, useNavigate, useLocati
 import { api, setToken, getToken, setUnauthorizedHandler } from './api.js';
 import { resetSocket, getSocket } from './socket.js';
 import { Icons, ToastProvider } from './ui.jsx';
+import { BrandBlock } from './components/Logo.jsx';
 import { ROLE_MN } from './format.js';
 
 import Login from './pages/Login.jsx';
@@ -19,19 +20,7 @@ import SelfCheckin from './pages/SelfCheckin.jsx';
 
 export const AuthCtx = React.createContext(null);
 
-function Logo() {
-  return (
-    <div className="brand">
-      <div className="brand-logo">
-        <Icons.plane size={20} />
-      </div>
-      <div>
-        <div className="brand-name">AERO MONGOLIA</div>
-        <div className="brand-sub">VOYAGE E-BOARDING</div>
-      </div>
-    </div>
-  );
-}
+const STATION_NAME = { UB: 'Чингис хаан ОУНБ', OT: 'Ханбумбат (Оюу Толгой)' };
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: 'dashboard', roles: ['admin', 'manager', 'agent'] },
@@ -63,7 +52,7 @@ function Shell({ user, onLogout, children }) {
   return (
     <div className="shell">
       <aside className="sidebar no-print">
-        <Logo />
+        <BrandBlock />
         <div className="nav-section">ҮЙЛ АЖИЛЛАГАА</div>
         {items.map((n) => (
           <React.Fragment key={n.to}>
@@ -91,6 +80,11 @@ function Shell({ user, onLogout, children }) {
             <input placeholder="Зорчигч хайх — нэр, SAP ID, PNR, утас…" value={q} onChange={(e) => setQ(e.target.value)} />
           </form>
           <div className="userchip">
+            {user.station && (
+              <span className="badge blue" title="Таны ажиллаж буй буудал">
+                {user.station} · {STATION_NAME[user.station] || user.station}
+              </span>
+            )}
             <div>
               <div style={{ fontWeight: 650, fontSize: 13 }}>{user.full_name}</div>
               <div style={{ fontSize: 11, color: 'var(--faint)', letterSpacing: 1 }}>{(user.role || '').toUpperCase()}</div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { api, setToken } from '../api.js';
 import { Icons } from '../ui.jsx';
+import { LogoMark } from '../components/Logo.jsx';
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -25,7 +26,7 @@ export default function Login({ onLogin }) {
   return (
     <div className="hero-page">
       <div className="hero-topbar">
-        <div className="brand-logo" style={{ background: 'var(--blue)' }}><Icons.plane size={20} /></div>
+        <LogoMark size={40} text={false} />
         <div>
           <div style={{ fontWeight: 800, letterSpacing: 0.5 }}>AERO MONGOLIA</div>
           <div style={{ fontSize: 10.5, color: '#7f9db8', letterSpacing: 1.2 }}>VOYAGE E-BOARDING SYSTEM</div>
@@ -34,7 +35,10 @@ export default function Login({ onLogin }) {
       </div>
       <div className="hero-body" style={{ justifyContent: 'center' }}>
         <form className="hero-card" onSubmit={submit}>
-          <h2 style={{ fontSize: 19, marginBottom: 4 }}>Ажилтны нэвтрэлт</h2>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+            <LogoMark size={84} />
+          </div>
+          <h2 style={{ fontSize: 19, marginBottom: 4, textAlign: 'center' }}>Ажилтны нэвтрэлт</h2>
           <p style={{ color: 'var(--muted)', margin: '0 0 18px', fontSize: 13 }}>
             Voyage системд нэвтрэхийн тулд бүртгэлтэй нэр, нууц үгээ оруулна уу.
           </p>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Icons } from '../ui.jsx';
+import { LogoMark } from '../components/Logo.jsx';
 import BoardingPass from '../components/BoardingPass.jsx';
 import PrintPortal from '../components/PrintPortal.jsx';
 import { fmtDate, fmtTime, addMinutes } from '../format.js';
@@ -87,7 +88,7 @@ export default function SelfCheckin() {
   return (
     <div className="hero-page">
       <div className="hero-topbar">
-        <div className="brand-logo" style={{ background: 'var(--blue)' }}><Icons.plane size={20} /></div>
+        <LogoMark size={40} text={false} />
         <div>
           <div style={{ fontWeight: 800, letterSpacing: 0.5 }}>AERO MONGOLIA</div>
           <div style={{ fontSize: 10.5, color: '#7f9db8', letterSpacing: 1.2 }}>ОНЛАЙН CHECK-IN</div>

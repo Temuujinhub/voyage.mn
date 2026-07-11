@@ -18,19 +18,23 @@ echo "==> Installing docker & nginx (if missing)…"
 if ! command -v docker > /dev/null; then
   curl -fsSL https://get.docker.com | sh
 fi
-apt-get update -qq
-apt-get install -y -qq nginx ufw > /dev/null
-
-echo "==> Firewall (SSH + HTTP/HTTPS only)…"
-ufw allow OpenSSH > /dev/null
-ufw allow 'Nginx Full' > /dev/null
-ufw --force enable > /dev/null
+if ! command -v nginx > /dev/null || ! command -v ufw > /dev/null; then
+  apt-get update -qq
+  apt-get install -y -qq nginx ufw > /dev/null
+  echo "==> Firewall (SSH + HTTP/HTTPS only)…"
+  ufw allow OpenSSH > /dev/null
+  ufw allow 'Nginx Full' > /dev/null
+  ufw --force enable > /dev/null
+fi
 
 echo "==> Building & starting containers…"
 docker compose up -d --build
 
 echo "==> Configuring nginx…"
-cp deploy/nginx-voyage.conf /etc/nginx/sites-available/voyage
+# don't clobber a certbot-managed config on re-deploys
+if [ ! -f /etc/nginx/sites-available/voyage ] || ! grep -q 'managed by Certbot' /etc/nginx/sites-available/voyage; then
+  cp deploy/nginx-voyage.conf /etc/nginx/sites-available/voyage
+fi
 ln -sf /etc/nginx/sites-available/voyage /etc/nginx/sites-enabled/voyage
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
