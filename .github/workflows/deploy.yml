@@ -57,12 +57,15 @@ jobs:
             cd /opt/voyage
             if [ ! -f .env ]; then
               umask 077
+              # strip stray CR/LF that a pasted secret may carry, so the
+              # generated .env is always well-formed KEY=value lines
+              clean() { printf '%s' "$1" | tr -d '\r\n'; }
               {
-                echo "DB_PASSWORD=${DB_PASSWORD}"
-                echo "JWT_SECRET=${JWT_SECRET}"
-                echo "QR_SECRET=${QR_SECRET}"
-                echo "ADMIN_PASSWORD=${ADMIN_PASSWORD}"
-                echo "PUBLIC_BASE_URL=https://voyage.mn"
+                printf 'DB_PASSWORD=%s\n'    "$(clean "$DB_PASSWORD")"
+                printf 'JWT_SECRET=%s\n'     "$(clean "$JWT_SECRET")"
+                printf 'QR_SECRET=%s\n'      "$(clean "$QR_SECRET")"
+                printf 'ADMIN_PASSWORD=%s\n' "$(clean "$ADMIN_PASSWORD")"
+                printf 'PUBLIC_BASE_URL=%s\n' "https://voyage.mn"
               } > .env
               echo ".env created from GitHub secrets"
             fi
