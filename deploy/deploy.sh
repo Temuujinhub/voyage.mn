@@ -44,11 +44,16 @@ if [ -f .env ]; then
       if docker compose exec -T db pg_isready -U voyage -d voyage > /dev/null 2>&1; then break; fi
       sleep 2
     done
-    docker compose exec -T -e V="$DBPW" db \
+    # embed the password directly, doubling any single quotes so it is a valid
+    # SQL string literal (psql :'var' only reads -v vars, not env vars)
+    DBPW_SQL="$(printf '%s' "$DBPW" | sed "s/'/''/g")"
+    if docker compose exec -T db \
       psql -U voyage -d voyage -v ON_ERROR_STOP=1 \
-      -c "ALTER USER voyage WITH PASSWORD :'V';" \
-      && docker compose restart app \
-      || echo "   (password sync skipped — will rely on existing credentials)"
+      -c "ALTER USER voyage WITH PASSWORD '${DBPW_SQL}';"; then
+      docker compose restart app
+    else
+      echo "   (password sync skipped — will rely on existing credentials)"
+    fi
   fi
 fi
 
