@@ -106,20 +106,25 @@ export default function Settings() {
         </div>
       </Section>
 
-      <Section title="OTP / СМС" desc="Зорчигчийн онлайн check-in-ий баталгаажуулалт" onSave={async () => { await save('otp'); await save('sms_gateway'); }} busy={busy}>
+      <Section title="OTP / СМС (CallPro Text API)" desc="Зорчигчийн онлайн check-in-ий баталгаажуулалт — api-text.callpro.mn" onSave={async () => { await save('otp'); await save('sms_gateway'); }} busy={busy}>
         <div className="formgrid">
           <div className="field"><label>Горим</label>
             <select value={s.otp.mode} onChange={(e) => set('otp', { mode: e.target.value })}>
               <option value="dev">DEV — кодыг дэлгэцэнд харуулна (туршилт)</option>
-              <option value="sms_gateway">SMS Gateway — бодит СМС илгээнэ</option>
+              <option value="sms_gateway">CallPro — бодит СМС илгээнэ</option>
             </select></div>
           <div className="field"><label>Кодын хүчинтэй хугацаа (мин)</label>
             <input type="number" min="1" value={s.otp.ttl_minutes} onChange={(e) => set('otp', { ttl_minutes: Number(e.target.value) })} /></div>
-          <div className="field"><label>Gateway URL</label>
-            <input placeholder="https://sms.operator.mn/send" value={s.sms_gateway.url}
-              onChange={(e) => set('sms_gateway', { url: e.target.value })} /></div>
-          <div className="field"><label>API түлхүүр</label>
+          <div className="field"><label>Base URL</label>
+            <input value={s.sms_gateway.base_url || 'https://api-text.callpro.mn/v1/sms'}
+              onChange={(e) => set('sms_gateway', { base_url: e.target.value })} /></div>
+          <div className="field"><label>API түлхүүр (x-api-key)</label>
             <input type="password" value={s.sms_gateway.api_key} onChange={(e) => set('sms_gateway', { api_key: e.target.value })} /></div>
+          <div className="field"><label>Илгээгч дугаар (from)</label>
+            <input placeholder="72xxxxxx" value={s.sms_gateway.from || ''} onChange={(e) => set('sms_gateway', { from: e.target.value })} />
+            <span className="hint">CallPro-оос олгосон lime дугаар</span></div>
+          <div className="field"><label>Brand ID (заавал биш)</label>
+            <input value={s.sms_gateway.brand || ''} onChange={(e) => set('sms_gateway', { brand: e.target.value })} /></div>
           <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input type="checkbox" checked={s.sms_gateway.enabled} onChange={(e) => set('sms_gateway', { enabled: e.target.checked })} />
             Gateway идэвхтэй

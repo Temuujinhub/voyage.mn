@@ -1,0 +1,286 @@
+Text API — REST API Documentation
+Base URL: https://api-text.callpro.mn/v1/sms
+
+Authentication
+API key-г дамжуулна:
+Арга
+Header
+
+Тайлбар
+x-api-key: <your-api-key>
+
+Endpoints
+1. Send SMS
+
+SMS мессеж илгээх.
+URL: /send Method: POST (JSON body) эсвэл GET (query parameters)
+Request Parameters
+Parameter
+Type
+from
+string | number
+to
+string | number
+text
+string
+brand
+string | number
+
+Required
+Yes
+Yes
+Yes
+No
+
+Description
+Илгээгч дугаар (lime number, e.g. 72xxxxxx)
+Хүлээн авагч дугаар (e.g. 99112233)
+Мессежийн агуулга
+Brand name ID
+
+POST Example
+curl -X POST https://<baseUrl>/send \
+-H "Content-Type: application/json" \
+-H "x-api-key: your-api-key" \
+-d '{
+"from": "72xxxxxx",
+"to": "99xxxxxx",
+"text": "Сайн байна уу!"
+}'
+
+GET Example
+curl -X GET "https://<baseUrl>/send?from=72001234&to=99112233&text=Hello" \
+-H "x-api-key: your-api-key"
+
+Success Response (200)
+
+{
+"status": "queued",
+"message_id": "0195c03b-7f96-7f9f-8b71-4d7a930adf2f_1"
+}
+
+Field
+status
+
+message_id
+
+Type
+string
+string
+
+Description
+Мессежийн төлөв (queued)
+Мессежийн давтагдашгүй ID. Энэ ID-г ашиглан хүргэлтийн төлөвийг
+шалгана
+
+Error Responses
+Status
+Description
+400
+Буруу параметр (утасны дугаар, campaign гэх мэт)
+401
+API key буруу эсвэл дутуу
+402
+Төлбөр төлөгдөөгүй
+403
+Хаагдсан дугаар
+404
+Tenant эсвэл дугаар олдсонгүй
+422
+Validation алдаа
+500
+Серверийн алдаа
+
+Body
+{ "error": "..." }
+{ "error": "Unauthorized" }
+{ "error": "Payment not paid" }
+{ "error": "Blocked number" }
+{ "error": "..." }
+{ "issues": [...] }
+{ "error": "..." }
+
+2. Message Detail (Delivery Status)
+
+Илгээсэн мессежийн хүргэлтийн төлөвийг шалгах.
+URL: /:unique_id Method: GET
+Request Parameters
+Parameter Location
+unique_id
+Path
+key
+Query
+
+Type
+string
+string
+
+Required
+Yes
+No
+
+Description
+/send-ээс буцсан message_id утга
+API key (header-аар дамжуулаагүй бол)
+
+Example
+curl -X GET https://<baseUrl>/0195c03b-7f96-7f9f-8b71-4d7a930adf2f_1 \
+-H "x-api-key: your-api-key"
+
+Success Response (200)
+
+{
+"uniqueId": "0195c03b-7f96-7f9f-8b71-4d7a930adf2f_1",
+"messageCount": 1,
+"delivered": true,
+"messages": [
+{
+"to": "99112233",
+"from": "72001234",
+"text": "Сайн байна уу!",
+"direction": "out",
+"created_at": "2025-03-30T10:00:00Z",
+"events": [
+{
+"event_type": "QUEUED",
+"created_at": "2025-03-30T10:00:00Z"
+},
+{
+"event_type": "DELIVERED",
+"created_at": "2025-03-30T10:00:02Z",
+"send_result": "0: Accepted for delivery",
+"delivered_status": true
+}
+]
+}
+]
+}
+
+Field
+uniqueId
+messageCount
+delivered
+messages
+messages[].events
+
+Event Types
+Event
+QUEUED
+DELIVERED
+UNDELIVERED
+CHANGED
+RATE
+
+Type
+string
+number
+boolean
+array
+array
+
+Description
+Мессежийн ID
+Segment-ийн тоо (урт мессеж олон хэсэгтэй)
+Хүргэгдсэн эсэх (сүүлийн event-ээс)
+Мессеж бүрийн дэлгэрэнгүй
+Event-ийн түүх (QUEUED → DELIVERED / UNDELIVERED)
+
+Description
+Мессеж дараалалд орсон
+Амжилттай хүргэгдсэн
+Хүргэгдээгүй
+72-той дугаар өөрчлөгдсөн
+Үнэлгээний хариу
+
+Error Responses
+Status
+Description
+401
+API key буруу эсвэл дутуу
+404
+Мессеж олдсонгүй
+422
+Validation алдаа
+500
+Серверийн алдаа
+
+Body
+{ "error": "Unauthorized" }
+{ "error": "Message detail not found" }
+{ "issues": [...] }
+{ "error": "..." }
+
+3. Tenant Daily Message Count
+
+Компанийн өдрийн мессежийн тоо болон үлдэгдлийг операторын нэрээр шалгах.
+URL: /tenant/daily Method: GET
+Request Parameters
+Parameter Location
+operator
+Query
+x-api-key
+Header
+
+Type
+string
+string
+
+Required
+Yes
+Yes
+
+Description
+Оператор: skytel | mobicom | unitel
+API key
+
+Example
+curl -X GET "https://<baseUrl>/tenant/daily?operator=skytel" \
+-H "x-api-key: your-api-key"
+
+Success Response (200)
+{
+"balance": 3200,
+"current": 800,
+"status": "success",
+"total_message": 4000
+}
+
+Field
+balance
+current
+total_message
+
+Error Responses
+Status
+
+Type
+number
+number
+number
+
+Description
+Илгээх боломжтой үлдэгдэл мессежийн тоо
+Тухайн хугацаанд илгээсэн мессежийн тоо
+Нийт зөвшөөрөгдсөн мессежийн тоо
+Description
+
+Body
+
+400
+403
+
+Notes
+
+API key дутуу эсвэл компани олдсонгүй
+Серверийн логик алдаа
+
+{ "reason": "..." }
+{ "reason": "Internal server error" }
+
+Урт мессеж (160+ тэмдэгт) олон segment болж илгээгдэнэ. Латин бол 160, Кирилл бол 70
+unique_id параметр дамжуулбал тэр утга message_id -ийн prefix болно.
+Дугаарын формат: 8 оронтой утасны дугаар хангалттай (e.g. 99112233 ). 976 prefix-тэй
+эсвэл +976 prefix-тэй бас ажиллана.
+Олон улсын дугаар дараах форматтай байна улсын код + дугаар /жишээ: (15612767156/US/)
+
+

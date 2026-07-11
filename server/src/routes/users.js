@@ -9,25 +9,28 @@ router.use(authRequired, requireRole('admin'));
 
 const ROLES = ['admin', 'manager', 'agent', 'ot_staff'];
 
+const STATIONS = ['UB', 'OT'];
+
 router.get('/', async (req, res) => {
   const { rows } = await q(
-    'SELECT id, username, full_name, role, email, phone, active, created_at FROM users ORDER BY created_at'
+    'SELECT id, username, full_name, role, station, email, phone, active, created_at FROM users ORDER BY created_at'
   );
   res.json({ users: rows });
 });
 
 router.post('/', async (req, res) => {
-  const { username, password, full_name, role, email, phone } = req.body || {};
+  const { username, password, full_name, role, email, phone, station } = req.body || {};
   if (!username || !password || !full_name || !ROLES.includes(role)) {
     return res.status(400).json({ error: 'username, password, full_name, role шаардлагатай' });
   }
   if (String(password).length < 8) return res.status(400).json({ error: 'Нууц үг доод тал нь 8 тэмдэгт' });
+  if (station && !STATIONS.includes(station)) return res.status(400).json({ error: 'Station нь UB эсвэл OT байна' });
   const hash = await bcrypt.hash(password, 10);
   try {
     const { rows } = await q(
-      `INSERT INTO users (username, password_hash, full_name, role, email, phone)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, username, full_name, role, email, phone, active`,
-      [String(username).toLowerCase(), hash, full_name, role, email || null, phone || null]
+      `INSERT INTO users (username, password_hash, full_name, role, email, phone, station)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id, username, full_name, role, station, email, phone, active`,
+      [String(username).toLowerCase(), hash, full_name, role, email || null, phone || null, station || null]
     );
     await audit(req, 'USER_CREATED', 'user', rows[0].id, { username, role });
     res.status(201).json({ user: rows[0] });
@@ -38,8 +41,9 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const { full_name, role, email, phone, active, password } = req.body || {};
+  const { full_name, role, email, phone, active, password, station } = req.body || {};
   if (role && !ROLES.includes(role)) return res.status(400).json({ error: 'Буруу role' });
+  if (station && !STATIONS.includes(station)) return res.status(400).json({ error: 'Station нь UB эсвэл OT байна' });
   if (req.params.id === req.user.id && active === false) {
     return res.status(400).json({ error: 'Өөрийгөө идэвхгүй болгох боломжгүй' });
   }
@@ -50,9 +54,11 @@ router.put('/:id', async (req, res) => {
        email     = COALESCE($4, email),
        phone     = COALESCE($5, phone),
        active    = COALESCE($6, active),
+       station   = CASE WHEN $7::text = '__clear__' THEN NULL ELSE COALESCE($7, station) END,
        updated_at = now()
-     WHERE id = $1 RETURNING id, username, full_name, role, email, phone, active`,
-    [req.params.id, full_name, role, email, phone, active]
+     WHERE id = $1 RETURNING id, username, full_name, role, station, email, phone, active`,
+    [req.params.id, full_name, role, email, phone, active,
+     station === '' ? '__clear__' : station]
   );
   if (!rows[0]) return res.status(404).json({ error: 'Хэрэглэгч олдсонгүй' });
   if (password) {

@@ -24,12 +24,12 @@ router.post('/login', loginLimiter, async (req, res) => {
   await audit(req, 'LOGIN', 'user', user.id, {});
   res.json({
     token,
-    user: { id: user.id, username: user.username, full_name: user.full_name, role: user.role },
+    user: { id: user.id, username: user.username, full_name: user.full_name, role: user.role, station: user.station || null },
   });
 });
 
 router.get('/me', authRequired, async (req, res) => {
-  const { rows } = await q('SELECT id, username, full_name, role, email, phone FROM users WHERE id = $1', [req.user.id]);
+  const { rows } = await q('SELECT id, username, full_name, role, station, email, phone FROM users WHERE id = $1', [req.user.id]);
   if (!rows[0]) return res.status(401).json({ error: 'not found' });
   res.json({ user: rows[0] });
 });

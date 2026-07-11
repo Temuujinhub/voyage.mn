@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { api } from '../api.js';
+import { AuthCtx } from '../App.jsx';
 import { getSocket } from '../socket.js';
 import { Icons, Spinner, useToast, PaxBadge } from '../ui.jsx';
 import { fmtTime } from '../format.js';
@@ -8,6 +9,7 @@ import { C } from '../charts.jsx';
 
 export default function Gate() {
   const toast = useToast();
+  const user = useContext(AuthCtx);
   const [flights, setFlights] = useState([]);
   const [flightId, setFlightId] = useState('');
   const [point, setPoint] = useState('GATE');
@@ -20,7 +22,11 @@ export default function Gate() {
   const lockRef = useRef(false);
 
   const loadFlights = () => api.get('/api/flights').then((d) => {
-    const active = d.flights.filter((f) => ['CHECKIN_OPEN', 'BOARDING'].includes(f.status));
+    // boarding happens at the agent's own airport — station filters the list
+    let active = d.flights.filter((f) => ['CHECKIN_OPEN', 'BOARDING'].includes(f.status));
+    if (user?.station && active.some((f) => f.origin_code === user.station)) {
+      active = active.filter((f) => f.origin_code === user.station);
+    }
     setFlights(active);
     if (!flightId && active[0]) setFlightId(active[0].id);
   });

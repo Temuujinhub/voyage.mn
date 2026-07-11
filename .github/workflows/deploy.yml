@@ -1,0 +1,70 @@
+# Auto-deploy: main руу merge/push хийгдмэгц droplet (157.245.203.209) дээр
+# кодыг шинэчилж, docker compose-оор дахин build хийж асаана.
+#
+# Нэг удаа тохируулах зүйл — GitHub repo Settings → Secrets and variables → Actions:
+#   DROPLET_HOST      157.245.203.209
+#   DROPLET_USER      root
+#   DROPLET_SSH_KEY   droplet-д нэвтрэх private key (бүтэн, -----BEGIN...-----END)
+#   DB_PASSWORD       Postgres нууц үг        (openssl rand -hex 24)
+#   JWT_SECRET        JWT түлхүүр             (openssl rand -hex 32)
+#   QR_SECRET         QR гарын үсгийн түлхүүр (openssl rand -hex 32)
+#   ADMIN_PASSWORD    Анхны админ нууц үг
+# .env файл сервер дээр байхгүй үед эдгээр secret-үүдээс автоматаар үүснэ;
+# байгаа бол хүчинтэй хэвээр үлдэнэ (дахин бичихгүй).
+
+name: Deploy to production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync code to droplet (rsync over SSH)
+        uses: easingthemes/ssh-deploy@v5.1.0
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.DROPLET_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.DROPLET_HOST }}
+          REMOTE_USER: ${{ secrets.DROPLET_USER }}
+          TARGET: /opt/voyage/
+          ARGS: '-rlgoDzvc -i --delete'
+          EXCLUDE: '.git/, node_modules/, client/dist/, .env'
+
+      - name: Build & restart services
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          QR_SECRET: ${{ secrets.QR_SECRET }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          envs: DB_PASSWORD,JWT_SECRET,QR_SECRET,ADMIN_PASSWORD
+          script: |
+            set -euo pipefail
+            cd /opt/voyage
+            if [ ! -f .env ]; then
+              umask 077
+              {
+                echo "DB_PASSWORD=${DB_PASSWORD}"
+                echo "JWT_SECRET=${JWT_SECRET}"
+                echo "QR_SECRET=${QR_SECRET}"
+                echo "ADMIN_PASSWORD=${ADMIN_PASSWORD}"
+                echo "PUBLIC_BASE_URL=https://voyage.mn"
+              } > .env
+              echo ".env created from GitHub secrets"
+            fi
+            bash deploy/deploy.sh
+            curl -sf localhost:4000/api/health && echo && echo "✔ deploy OK"

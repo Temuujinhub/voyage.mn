@@ -3,7 +3,8 @@ import { api } from '../api.js';
 import { Icons, Modal, Spinner, useToast, Avatar } from '../ui.jsx';
 import { fmtDate, ROLE_MN } from '../format.js';
 
-const empty = { username: '', password: '', full_name: '', role: 'agent', email: '', phone: '' };
+const empty = { username: '', password: '', full_name: '', role: 'agent', email: '', phone: '', station: '' };
+const STATION_MN = { UB: 'UB — Чингис хаан ОУНБ', OT: 'OT — Ханбумбат (Оюу Толгой)' };
 
 export default function Users() {
   const toast = useToast();
@@ -21,7 +22,7 @@ export default function Users() {
     setBusy(true);
     try {
       if (editing) {
-        const body = { full_name: form.full_name, role: form.role, email: form.email, phone: form.phone };
+        const body = { full_name: form.full_name, role: form.role, email: form.email, phone: form.phone, station: form.station || '' };
         if (form.password) body.password = form.password;
         await api.put(`/api/users/${editing.id}`, body);
       } else {
@@ -63,13 +64,14 @@ export default function Users() {
       <div className="card">
         <div className="tablewrap">
           <table className="tbl">
-            <thead><tr><th>Хэрэглэгч</th><th>Нэвтрэх нэр</th><th>Эрх</th><th>И-мэйл / Утас</th><th>Бүртгэсэн</th><th>Төлөв</th><th></th></tr></thead>
+            <thead><tr><th>Хэрэглэгч</th><th>Нэвтрэх нэр</th><th>Эрх</th><th>Буудал</th><th>И-мэйл / Утас</th><th>Бүртгэсэн</th><th>Төлөв</th><th></th></tr></thead>
             <tbody>
               {users.map((u) => (
                 <tr key={u.id}>
                   <td><div className="pax-cell"><Avatar name={u.full_name} /><b>{u.full_name}</b></div></td>
                   <td className="num">{u.username}</td>
                   <td><span className={`badge ${u.role === 'admin' ? 'navy' : u.role === 'manager' ? 'blue' : u.role === 'ot_staff' ? 'amber' : 'gray'}`}>{ROLE_MN[u.role]}</span></td>
+                  <td>{u.station ? <span className="badge teal">{u.station}</span> : <span style={{ color: 'var(--faint)' }}>Бүгд</span>}</td>
                   <td style={{ fontSize: 12.5, color: 'var(--muted)' }}>{u.email || '—'}{u.phone ? ` · ${u.phone}` : ''}</td>
                   <td className="num" style={{ fontSize: 12.5 }}>{fmtDate(u.created_at)}</td>
                   <td>{u.active ? <span className="badge green">Идэвхтэй</span> : <span className="badge red">Хаагдсан</span>}</td>
@@ -112,6 +114,14 @@ export default function Users() {
                   <option value="manager">Менежер (Үйл ажиллагаа)</option>
                   <option value="agent">Бүртгэлийн ажилтан (Check-in)</option>
                   <option value="ot_staff">ОТ аяллын ажилтан (Manifest)</option>
+                </select>
+              </div>
+              <div className="field">
+                <label>Ажиллах буудал (check-in/boarding автоматаар шүүгдэнэ)</label>
+                <select value={form.station || ''} onChange={(e) => setForm({ ...form, station: e.target.value })}>
+                  <option value="">Бүх буудал</option>
+                  <option value="UB">{STATION_MN.UB}</option>
+                  <option value="OT">{STATION_MN.OT}</option>
                 </select>
               </div>
               <div className="field">

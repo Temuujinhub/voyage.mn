@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { api } from '../api.js';
+import { AuthCtx } from '../App.jsx';
 import { Icons, Modal, PaxBadge, FlightBadge, Spinner, useToast, Avatar } from '../ui.jsx';
 import SeatMap from '../components/SeatMap.jsx';
 import BoardingPass from '../components/BoardingPass.jsx';
@@ -10,6 +11,7 @@ import { fmtDateTime, fmtTime } from '../format.js';
 
 export default function Checkin() {
   const toast = useToast();
+  const user = useContext(AuthCtx);
   const [params, setParams] = useSearchParams();
   const [flights, setFlights] = useState([]);
   const [flightId, setFlightId] = useState('');
@@ -33,11 +35,14 @@ export default function Checkin() {
 
   useEffect(() => {
     api.get('/api/flights').then((d) => {
-      const active = d.flights.filter((f) => ['CHECKIN_OPEN', 'BOARDING'].includes(f.status));
+      // the agent's station (set at login) picks their airport's flights first
+      const atStation = (list) =>
+        user?.station ? list.filter((f) => f.origin_code === user.station) : list;
+      let active = d.flights.filter((f) => ['CHECKIN_OPEN', 'BOARDING'].includes(f.status));
+      if (atStation(active).length) active = atStation(active);
       setFlights(active.length ? active : d.flights.slice(0, 10));
       if (active[0] && !params.get('pax') && !params.get('q')) setFlightId(active[0].id);
     });
-    api.get('/api/reports/overview').catch(() => {});
   }, []);
 
   useEffect(() => {

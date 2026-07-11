@@ -1,4 +1,5 @@
 import React from 'react';
+import { LogoMark } from './Logo.jsx';
 import { fmtTime, fmtDate, addMinutes } from '../format.js';
 
 // Realistic ATB-style boarding pass (~187×83mm, IATA ATB2 proportion).
@@ -14,9 +15,7 @@ export default function BoardingPass({ passenger: p, airline, qrDataUrl, compact
       {/* header band */}
       <div className="bp-head">
         <div className="bp-logo">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10.5 20.5 13 14l5.5-5.5c1.2-1.2 1.7-2.9 1-3.9-1-.7-2.7-.2-3.9 1L10 11 3.5 13.5l1.8 1.8 4.2-1.3 2 2-1.3 4.2 0.3 0.3Z"/>
-          </svg>
+          <LogoMark size={30} text={false} />
           <b>{airline?.logo_text || 'AERO MONGOLIA'}</b>
         </div>
         <div className="bp-head-title">
