@@ -55,7 +55,7 @@ export default function Login({ onLogin }) {
             {busy ? 'Нэвтэрч байна…' : 'Нэвтрэх'}
           </button>
           <div style={{ marginTop: 16, fontSize: 12, color: 'var(--faint)', textAlign: 'center' }}>
-            Зорчигч уу? <a href="/checkin-online">Онлайн check-in →</a>
+            Зорчигч уу? <a href="/">Онлайн check-in →</a>
           </div>
         </form>
         <div className="hero-foot">© {new Date().getFullYear()} Aero Mongolia — Voyage E-Boarding · voyage.mn</div>

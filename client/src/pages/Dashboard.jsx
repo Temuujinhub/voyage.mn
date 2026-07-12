@@ -48,7 +48,7 @@ export default function Dashboard() {
         <h1>Dashboard</h1>
         <span style={{ color: 'var(--faint)', fontSize: 13 }}>{fmtDate(new Date())} · Улаанбаатарын цагаар</span>
         <div className="spacer" />
-        <Link to="/flights" className="btn secondary">Бүх нислэг</Link>
+        <Link to="/staff/flights" className="btn secondary">Бүх нислэг</Link>
       </div>
 
       {delayed.map((f) => (
@@ -108,9 +108,9 @@ export default function Dashboard() {
               <th>Нислэг</th><th>Чиглэл</th><th>Хөөрөх</th><th>Gate</th><th>Онгоц</th><th>Зорчигч</th><th>Boarding</th><th>Төлөв</th>
             </tr></thead>
             <tbody>
-              {flights.length === 0 && <tr><td colSpan={8}><div className="empty">Нислэг алга. <Link to="/flights">Нислэг үүсгэх →</Link></div></td></tr>}
+              {flights.length === 0 && <tr><td colSpan={8}><div className="empty">Нислэг алга. <Link to="/staff/flights">Нислэг үүсгэх →</Link></div></td></tr>}
               {flights.map((f) => (
-                <tr key={f.id} className="rowlink" onClick={() => (window.location.href = `/flights/${f.id}`)}>
+                <tr key={f.id} className="rowlink" onClick={() => (window.location.href = `/staff/flights/${f.id}`)}>
                   <td><b>{f.flight_number}</b><div style={{ fontSize: 11, color: 'var(--faint)' }}>{f.charter_code}</div></td>
                   <td>{f.origin_code} → {f.dest_code}</td>
                   <td className="num">{fmtTime(f.departure_ts)}{f.delay_minutes > 0 && <span className="badge amber" style={{ marginLeft: 6 }}>+{f.delay_minutes}м</span>}</td>

@@ -129,7 +129,7 @@ export default function Flights() {
             <tbody>
               {flights.length === 0 && <tr><td colSpan={9}><div className="empty">Нислэг олдсонгүй</div></td></tr>}
               {flights.map((f) => (
-                <tr key={f.id} className="rowlink" onClick={() => navigate(`/flights/${f.id}`)}>
+                <tr key={f.id} className="rowlink" onClick={() => navigate(`/staff/flights/${f.id}`)}>
                   <td><b>{f.flight_number}</b></td>
                   <td style={{ color: 'var(--muted)' }}>{f.charter_code || '—'}</td>
                   <td>{f.origin_code} → {f.dest_code}{f.direction && <span className="badge gray" style={{ marginLeft: 6 }}>{f.direction}</span>}</td>

@@ -23,14 +23,14 @@ export const AuthCtx = React.createContext(null);
 const STATION_NAME = { UB: 'Чингис хаан ОУНБ', OT: 'Ханбумбат (Оюу Толгой)' };
 
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: 'dashboard', roles: ['admin', 'manager', 'agent'] },
-  { to: '/flights', label: 'Нислэгүүд', icon: 'plane', roles: ['admin', 'manager', 'agent'] },
-  { to: '/checkin', label: 'Check-in бүртгэл', icon: 'users', roles: ['admin', 'manager', 'agent'] },
-  { to: '/gate', label: 'Gate / Скан', icon: 'scan', roles: ['admin', 'manager', 'agent'] },
-  { to: '/manifests', label: 'Manifest', icon: 'upload', roles: ['admin', 'manager', 'ot_staff'] },
-  { to: '/reports', label: 'Тайлан', icon: 'chart', roles: ['admin', 'manager'] },
-  { to: '/users', label: 'Хэрэглэгчид', icon: 'users', roles: ['admin'], section: 'СИСТЕМ' },
-  { to: '/settings', label: 'Тохиргоо', icon: 'settings', roles: ['admin'] },
+  { to: '/staff', label: 'Dashboard', icon: 'dashboard', roles: ['admin', 'manager', 'agent'] },
+  { to: '/staff/flights', label: 'Нислэгүүд', icon: 'plane', roles: ['admin', 'manager', 'agent'] },
+  { to: '/staff/checkin', label: 'Check-in бүртгэл', icon: 'users', roles: ['admin', 'manager', 'agent'] },
+  { to: '/staff/gate', label: 'Gate / Скан', icon: 'scan', roles: ['admin', 'manager', 'agent'] },
+  { to: '/staff/manifests', label: 'Manifest', icon: 'upload', roles: ['admin', 'manager', 'ot_staff'] },
+  { to: '/staff/reports', label: 'Тайлан', icon: 'chart', roles: ['admin', 'manager'] },
+  { to: '/staff/users', label: 'Хэрэглэгчид', icon: 'users', roles: ['admin'], section: 'СИСТЕМ' },
+  { to: '/staff/settings', label: 'Тохиргоо', icon: 'settings', roles: ['admin'] },
 ];
 
 function Shell({ user, onLogout, children }) {
@@ -57,7 +57,7 @@ function Shell({ user, onLogout, children }) {
         {items.map((n) => (
           <React.Fragment key={n.to}>
             {n.section && <div className="nav-section">{n.section}</div>}
-            <NavLink to={n.to} end={n.to === '/'} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+            <NavLink to={n.to} end={n.to === '/staff'} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
               {React.createElement(Icons[n.icon])}{n.label}
             </NavLink>
           </React.Fragment>
@@ -75,7 +75,7 @@ function Shell({ user, onLogout, children }) {
       </aside>
       <div className="main">
         <div className="topbar no-print">
-          <form className="search" onSubmit={(e) => { e.preventDefault(); if (q.trim()) navigate(`/checkin?q=${encodeURIComponent(q.trim())}`); }}>
+          <form className="search" onSubmit={(e) => { e.preventDefault(); if (q.trim()) navigate(`/staff/checkin?q=${encodeURIComponent(q.trim())}`); }}>
             <Icons.search size={16} style={{ color: 'var(--faint)' }} />
             <input placeholder="Зорчигч хайх — нэр, SAP ID, PNR, утас…" value={q} onChange={(e) => setQ(e.target.value)} />
           </form>
@@ -115,25 +115,26 @@ function StaffApp() {
     }
   }, []);
 
-  const logout = () => { setToken(null); resetSocket(); setUser(null); navigate('/'); };
+  const logout = () => { setToken(null); resetSocket(); setUser(null); navigate('/staff'); };
 
   if (checking) return <div className="spin" style={{ marginTop: 120 }} />;
   if (!user) return <Login onLogin={(u) => { setUser(u); resetSocket(); }} />;
 
-  const home = user.role === 'ot_staff' ? '/manifests' : '/';
+  const home = user.role === 'ot_staff' ? '/staff/manifests' : '/staff';
   return (
     <AuthCtx.Provider value={user}>
       <Shell user={user} onLogout={logout}>
+        {/* StaffApp is mounted at /staff/*, so these paths are relative to /staff */}
         <Routes>
-          <Route path="/" element={user.role === 'ot_staff' ? <Navigate to="/manifests" /> : <Dashboard />} />
-          <Route path="/flights" element={<Flights />} />
-          <Route path="/flights/:id" element={<FlightDetail />} />
-          <Route path="/checkin" element={<Checkin />} />
-          <Route path="/gate" element={<Gate />} />
-          <Route path="/manifests" element={<Manifests />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/users" element={<Users />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route index element={user.role === 'ot_staff' ? <Navigate to="/staff/manifests" /> : <Dashboard />} />
+          <Route path="flights" element={<Flights />} />
+          <Route path="flights/:id" element={<FlightDetail />} />
+          <Route path="checkin" element={<Checkin />} />
+          <Route path="gate" element={<Gate />} />
+          <Route path="manifests" element={<Manifests />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="users" element={<Users />} />
+          <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Navigate to={home} />} />
         </Routes>
       </Shell>
@@ -146,8 +147,12 @@ export default function App() {
     <ToastProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/checkin-online/*" element={<SelfCheckin />} />
-          <Route path="*" element={<StaffApp />} />
+          {/* Public landing = passenger self check-in */}
+          <Route path="/" element={<SelfCheckin />} />
+          <Route path="/checkin-online/*" element={<Navigate to="/" replace />} />
+          {/* Staff portal (login + operations) lives under /staff */}
+          <Route path="/staff/*" element={<StaffApp />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </ToastProvider>

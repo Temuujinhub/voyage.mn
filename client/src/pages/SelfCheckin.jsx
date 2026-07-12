@@ -19,12 +19,15 @@ async function pub(path, body) {
   return data;
 }
 
-const STEPS = ['Утас', 'OTP', 'Нислэг', 'Бүртгэл'];
+const STEPS = ['Нэвтрэх', 'OTP', 'Нислэг', 'Бүртгэл'];
 
 export default function SelfCheckin() {
   const [step, setStep] = useState(0);
+  const [mode, setMode] = useState('phone'); // 'phone' | 'sap'
   const [phone, setPhone] = useState('');
+  const [sap, setSap] = useState('');
   const [maskedName, setMaskedName] = useState('');
+  const [maskedPhone, setMaskedPhone] = useState('');
   const [devCode, setDevCode] = useState(null);
   const [otp, setOtp] = useState('');
   const [flights, setFlights] = useState([]);
@@ -41,15 +44,18 @@ export default function SelfCheckin() {
     try { await fn(); } catch (ex) { setErr(ex.message); } finally { setBusy(false); }
   };
 
+  const authBody = () => (mode === 'sap' ? { employee_id: sap.trim() } : { phone });
+
   const requestOtp = () => run(async () => {
-    const d = await pub('/api/public/otp/request', { phone });
+    const d = await pub('/api/public/otp/request', authBody());
     setMaskedName(d.maskedName);
+    setMaskedPhone(d.maskedPhone || phone);
     setDevCode(d.devCode || null);
     setStep(1);
   });
 
   const verify = () => run(async () => {
-    const d = await pub('/api/public/otp/verify', { phone, code: otp });
+    const d = await pub('/api/public/otp/verify', { ...authBody(), code: otp });
     pub.token = d.token;
     const f = await pub('/api/public/my-flights');
     setFlights(f.flights);
@@ -81,8 +87,9 @@ export default function SelfCheckin() {
   });
 
   const reset = () => {
-    setStep(0); setPhone(''); setOtp(''); setDevCode(null); setPass(null);
+    setStep(0); setPhone(''); setSap(''); setOtp(''); setDevCode(null); setPass(null);
     setChosen(null); setErr(null); setBagWeight('0'); pub.token = null; setNotice(null);
+    setMaskedPhone('');
   };
 
   return (
@@ -93,7 +100,7 @@ export default function SelfCheckin() {
           <div style={{ fontWeight: 800, letterSpacing: 0.5 }}>AERO MONGOLIA</div>
           <div style={{ fontSize: 10.5, color: '#7f9db8', letterSpacing: 1.2 }}>ОНЛАЙН CHECK-IN</div>
         </div>
-        <div className="right">SELF CHECK-IN</div>
+        <a className="right" href="/staff" style={{ textDecoration: 'none' }}>АЖИЛТНЫ ХЭСЭГ →</a>
       </div>
 
       <div className="hero-body">
@@ -105,13 +112,13 @@ export default function SelfCheckin() {
               {step === 2 && <Icons.plane size={20} style={{ color: 'var(--blue)' }} />}
               {step === 3 && <Icons.bag size={20} style={{ color: 'var(--blue)' }} />}
               <h2 style={{ fontSize: 18 }}>
-                {['Утасны дугаараа оруулна уу', 'Баталгаажуулалт', 'Нислэгийн мэдээлэл', 'Check-in бүртгэл'][step]}
+                {[mode === 'sap' ? 'SAP дугаараа оруулна уу' : 'Утасны дугаараа оруулна уу', 'Баталгаажуулалт', 'Нислэгийн мэдээлэл', 'Check-in бүртгэл'][step]}
               </h2>
             </div>
             <p style={{ color: 'var(--muted)', fontSize: 12.5, margin: '0 0 6px' }}>
               {[
-                'Manifest-д бүртгэлтэй утасны дугаараар нэвтэрнэ',
-                `${phone} дугаарт илгээсэн кодыг оруулна уу`,
+                'Manifest-д бүртгэлтэй утас эсвэл SAP дугаараар нэвтэрнэ',
+                `${maskedPhone} дугаарт илгээсэн кодыг оруулна уу`,
                 `${maskedName} — Таны нислэгүүд`,
                 'Ачааны жинг оруулаад баталгаажуулна уу',
               ][step]}
@@ -129,13 +136,34 @@ export default function SelfCheckin() {
 
             {step === 0 && (
               <form onSubmit={(e) => { e.preventDefault(); requestOtp(); }}>
-                <div className="field">
-                  <label>УТАСНЫ ДУГААР</label>
-                  <input inputMode="tel" autoFocus placeholder="9911 2233" value={phone}
-                    style={{ fontSize: 22, textAlign: 'center', fontFamily: 'var(--mono)', letterSpacing: 3 }}
-                    onChange={(e) => setPhone(e.target.value)} />
+                <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+                  <button type="button" className={`btn ${mode === 'phone' ? '' : 'secondary'}`} style={{ flex: 1 }}
+                    onClick={() => { setMode('phone'); setErr(null); }}>
+                    <Icons.users size={15} />Утсаар
+                  </button>
+                  <button type="button" className={`btn ${mode === 'sap' ? '' : 'secondary'}`} style={{ flex: 1 }}
+                    onClick={() => { setMode('sap'); setErr(null); }}>
+                    <Icons.shield size={15} />SAP дугаараар
+                  </button>
                 </div>
-                <button className="btn lg block" disabled={busy || phone.replace(/\D/g, '').length < 8}>
+                {mode === 'phone' ? (
+                  <div className="field">
+                    <label>УТАСНЫ ДУГААР</label>
+                    <input inputMode="tel" autoFocus placeholder="9911 2233" value={phone}
+                      style={{ fontSize: 22, textAlign: 'center', fontFamily: 'var(--mono)', letterSpacing: 3 }}
+                      onChange={(e) => setPhone(e.target.value)} />
+                  </div>
+                ) : (
+                  <div className="field">
+                    <label>SAP / АЖИЛТНЫ ДУГААР</label>
+                    <input inputMode="numeric" autoFocus placeholder="9494615" value={sap}
+                      style={{ fontSize: 22, textAlign: 'center', fontFamily: 'var(--mono)', letterSpacing: 2 }}
+                      onChange={(e) => setSap(e.target.value.replace(/\s/g, ''))} />
+                    <span className="hint">Баталгаажуулах код таны бүртгэлтэй утсанд илгээгдэнэ</span>
+                  </div>
+                )}
+                <button className="btn lg block"
+                  disabled={busy || (mode === 'phone' ? phone.replace(/\D/g, '').length < 8 : sap.trim().length < 3)}>
                   {busy ? 'Шалгаж байна…' : 'Код авах'}
                 </button>
               </form>
