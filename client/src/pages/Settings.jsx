@@ -18,6 +18,120 @@ function Section({ title, desc, children, onSave, busy }) {
   );
 }
 
+const STATION_LABEL = { '': 'Бүх буудал', UB: 'UB — Чингис хаан', OT: 'OT — Ханбумбат' };
+
+function PrinterSection({ toast }) {
+  const [catalog, setCatalog] = useState([]);
+  const [printers, setPrinters] = useState(null);
+  const [installKey, setInstallKey] = useState('');
+  const [installName, setInstallName] = useState('');
+  const [installStation, setInstallStation] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = () => api.get('/api/printers').then((d) => setPrinters(d.printers)).catch((ex) => toast(ex.message, 'error'));
+  useEffect(() => {
+    api.get('/api/printers/catalog').then((d) => setCatalog(d.catalog)).catch(() => {});
+    load();
+  }, []);
+
+  const chosen = catalog.find((c) => c.model_key === installKey);
+
+  const install = async () => {
+    if (!installKey) return;
+    setBusy(true);
+    try {
+      await api.post('/api/printers/install', { model_key: installKey, name: installName, station: installStation || null });
+      toast('Хэвлэгч суулгагдлаа', 'success');
+      setInstallKey(''); setInstallName(''); setInstallStation('');
+      load();
+    } catch (ex) { toast(ex.message, 'error'); } finally { setBusy(false); }
+  };
+
+  const update = async (id, patch) => {
+    try { await api.put(`/api/printers/${id}`, patch); load(); }
+    catch (ex) { toast(ex.message, 'error'); }
+  };
+
+  const remove = async (p) => {
+    if (!window.confirm(`"${p.name}" хэвлэгчийг устгах уу?`)) return;
+    try { await api.del(`/api/printers/${p.id}`); toast('Устгагдлаа', 'success'); load(); }
+    catch (ex) { toast(ex.message, 'error'); }
+  };
+
+  return (
+    <Section title="Бирк / Boarding pass хэвлэгч" desc="Каталогоос хэвлэгчийн тохиргоо суулгаж, counter бүр суулгасан хэвлэгчээс сонгоно">
+      {/* installed printers */}
+      <div className="tablewrap" style={{ marginBottom: 16 }}>
+        <table className="tbl">
+          <thead><tr><th>Нэр</th><th>Загвар</th><th>Төрөл</th><th>Буудал</th><th>Media / DPI</th><th>Төлөв</th><th style={{ width: 220 }}></th></tr></thead>
+          <tbody>
+            {!printers && <tr><td colSpan={7}><Spinner /></td></tr>}
+            {printers?.length === 0 && (
+              <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--faint)', padding: 20 }}>
+                Суулгасан хэвлэгч алга — доорх каталогоос суулгана уу
+              </td></tr>
+            )}
+            {printers?.map((p) => (
+              <tr key={p.id} style={p.active ? undefined : { opacity: 0.5 }}>
+                <td><b>{p.name}</b>{p.is_default && <span className="badge green" style={{ marginLeft: 6 }}>үндсэн</span>}</td>
+                <td style={{ fontFamily: 'var(--mono)', fontSize: 11.5 }}>{p.model_key}</td>
+                <td>{p.kind === 'bagtag' ? 'Бирк' : p.kind === 'boarding' ? 'Boarding pass' : 'Бирк + BP'}</td>
+                <td>{p.station || 'Бүгд'}</td>
+                <td style={{ fontSize: 11.5 }}>{p.config?.media}{p.config?.dpi ? ` · ${p.config.dpi}dpi` : ''}</td>
+                <td><span className={`badge ${p.active ? 'green' : 'gray'}`}>{p.active ? 'Идэвхтэй' : 'Идэвхгүй'}</span></td>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  {!p.is_default && <button className="btn ghost sm" onClick={() => update(p.id, { is_default: true })}>Үндсэн</button>}{' '}
+                  <button className="btn ghost sm" onClick={() => update(p.id, { active: !p.active })}>{p.active ? 'Унтраах' : 'Асаах'}</button>{' '}
+                  <a className="btn ghost sm" href="#" onClick={(e) => {
+                    e.preventDefault();
+                    api.get(`/api/printers/${p.id}/config`).then((cfgJson) => {
+                      const blob = new Blob([JSON.stringify(cfgJson, null, 2)], { type: 'application/json' });
+                      const a = document.createElement('a');
+                      a.href = URL.createObjectURL(blob);
+                      a.download = `voyage-printer-${p.model_key}.json`;
+                      a.click();
+                      URL.revokeObjectURL(a.href);
+                    }).catch((ex) => toast(ex.message, 'error'));
+                  }}>Config татах</a>{' '}
+                  <button className="btn ghost sm" style={{ color: 'var(--red)' }} onClick={() => remove(p)}>Устгах</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* install from catalog */}
+      <div style={{ border: '1px dashed var(--line)', borderRadius: 10, padding: 14 }}>
+        <div style={{ fontWeight: 650, fontSize: 13, marginBottom: 10 }}>Каталогоос суулгах</div>
+        <div className="formgrid">
+          <div className="field"><label>Хэвлэгчийн загвар</label>
+            <select value={installKey} onChange={(e) => setInstallKey(e.target.value)}>
+              <option value="">— Сонгох —</option>
+              {catalog.map((c) => <option key={c.model_key} value={c.model_key}>{c.vendor} {c.model}</option>)}
+            </select></div>
+          <div className="field"><label>Нэр (counter)</label>
+            <input placeholder={chosen ? `${chosen.vendor} ${chosen.model}` : 'Counter 1 — Fujitsu'} value={installName}
+              onChange={(e) => setInstallName(e.target.value)} /></div>
+          <div className="field"><label>Буудал</label>
+            <select value={installStation} onChange={(e) => setInstallStation(e.target.value)}>
+              {Object.entries(STATION_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select></div>
+        </div>
+        {chosen && (
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '8px 0' }}>
+            {chosen.description} — media {chosen.config.media}, {chosen.config.dpi}dpi.
+            {chosen.driver_url && <> Драйвер: <a href={chosen.driver_url} target="_blank" rel="noreferrer">үйлдвэрлэгчийн сайтаас татах ↗</a></>}
+          </p>
+        )}
+        <button className="btn sm" disabled={!installKey || busy} onClick={install}>
+          <Icons.printer size={14} />Суулгах
+        </button>
+      </div>
+    </Section>
+  );
+}
+
 export default function Settings() {
   const toast = useToast();
   const [settings, setSettings] = useState(null);
@@ -131,6 +245,8 @@ export default function Settings() {
           </label>
         </div>
       </Section>
+
+      <PrinterSection toast={toast} />
 
       <Section title="Онгоцны тохиргоо" desc="Суудлын зураглал ба автомат хуваарилалтын дараалал">
         <div className="tablewrap">

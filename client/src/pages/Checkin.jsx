@@ -33,6 +33,26 @@ export default function Checkin() {
   const [tagData, setTagData] = useState(null);     // baggage tags
   const [printTags, setPrintTags] = useState(false);
 
+  // installed printers — the agent picks which counter printer to use;
+  // the choice is remembered per browser (localStorage)
+  const [printers, setPrinters] = useState([]);
+  const [printerId, setPrinterId] = useState(() => localStorage.getItem('voyage_printer') || '');
+  useEffect(() => {
+    api.get('/api/printers').then((d) => {
+      const usable = d.printers.filter((p) => p.active && (!p.station || p.station === user?.station || !user?.station));
+      setPrinters(usable);
+      setPrinterId((cur) => {
+        if (cur && usable.some((p) => p.id === cur)) return cur;
+        const def = usable.find((p) => p.is_default) || usable[0];
+        return def ? def.id : '';
+      });
+    }).catch(() => {});
+  }, []);
+  useEffect(() => { if (printerId) localStorage.setItem('voyage_printer', printerId); }, [printerId]);
+  const printer = printers.find((p) => p.id === printerId);
+  const tagPageSize = printer?.config?.media || '470mm 51mm';
+  const passPageSize = printer?.config?.boarding_media || '189mm 85mm';
+
   useEffect(() => {
     api.get('/api/flights').then((d) => {
       // the agent's station (set at login) picks their airport's flights first
@@ -287,7 +307,24 @@ export default function Checkin() {
           </div>
           {tagData && (
             <div className="alert info" style={{ margin: '12px 0' }}>
-              <Icons.bag size={16} />{tagData.length} ширхэг ачааны бирк бэлэн — Fujitsu принтер рүү хэвлэнэ үү.
+              <Icons.bag size={16} />{tagData.length} ширхэг ачааны бирк бэлэн — сонгосон хэвлэгч рүү хэвлэнэ үү.
+            </div>
+          )}
+          {printers.length > 0 && (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '0 0 12px' }}>
+              <Icons.printer size={15} style={{ color: 'var(--muted)' }} />
+              <select value={printerId} onChange={(e) => setPrinterId(e.target.value)} style={{ flex: 1, maxWidth: 340 }}>
+                {printers.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}{p.station ? ` (${p.station})` : ''} — {p.config?.media}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {printers.length === 0 && tagData && (
+            <div className="alert" style={{ margin: '0 0 12px', fontSize: 12.5 }}>
+              <Icons.alert size={15} />Хэвлэгч суулгаагүй байна — Тохиргоо → «Бирк / Boarding pass хэвлэгч» хэсгээс суулгана уу. Одоогоор стандарт 470×51мм хэмжээгээр хэвлэнэ.
             </div>
           )}
           <div className="modal-actions" style={{ justifyContent: 'space-between' }}>
@@ -309,12 +346,12 @@ export default function Checkin() {
       )}
 
       {printPass && passData && (
-        <PrintPortal pageSize="189mm 85mm" onDone={() => setPrintPass(false)}>
+        <PrintPortal pageSize={passPageSize} onDone={() => setPrintPass(false)}>
           <BoardingPass passenger={passData.passenger} airline={passData.airline} qrDataUrl={passData.qrDataUrl} />
         </PrintPortal>
       )}
       {printTags && tagData && (
-        <PrintPortal pageSize="470mm 51mm" onDone={async () => {
+        <PrintPortal pageSize={tagPageSize} onDone={async () => {
           setPrintTags(false);
           for (const t of tagData) await api.post(`/api/passengers/baggage/${t.id}/printed`).catch(() => {});
         }}>

@@ -6,6 +6,10 @@ export function setIo(instance) {
   io = instance;
 }
 
+export function socketCount() {
+  return io ? io.engine.clientsCount : 0;
+}
+
 export function emitFlight(flightId, event, payload) {
   if (!io) return;
   io.to(`flight:${flightId}`).emit(event, payload);
