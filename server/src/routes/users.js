@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { q } from '../db/pool.js';
-import { authRequired, requireRole } from '../middleware/auth.js';
+import { authRequired, requireRole, bumpTokenVersion } from '../middleware/auth.js';
 import { audit } from '../services/audit.js';
 
 const router = Router();
@@ -64,8 +64,11 @@ router.put('/:id', async (req, res) => {
   if (password) {
     if (String(password).length < 8) return res.status(400).json({ error: 'Нууц үг доод тал нь 8 тэмдэгт' });
     const hash = await bcrypt.hash(password, 10);
-    await q('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, req.params.id]);
+    // token_version bump revokes the user's existing sessions on reset
+    await q('UPDATE users SET password_hash = $1, token_version = token_version + 1 WHERE id = $2', [hash, req.params.id]);
+    bumpTokenVersion(req.params.id);
   }
+  if (active === false) bumpTokenVersion(req.params.id); // deactivation revokes immediately
   await audit(req, 'USER_UPDATED', 'user', req.params.id, { role, active, password_reset: !!password });
   res.json({ user: rows[0] });
 });

@@ -24,7 +24,26 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Server unit tests
+        working-directory: server
+        run: |
+          npm ci
+          npm test
+      - name: Client build
+        working-directory: client
+        run: |
+          npm ci
+          npm run build
+
   deploy:
+    needs: test # tests gate the deploy — a red suite never reaches the droplet
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

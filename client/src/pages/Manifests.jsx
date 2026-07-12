@@ -15,6 +15,7 @@ export default function Manifests() {
   const [result, setResult] = useState(null);
   const [force, setForce] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [openDiff, setOpenDiff] = useState(null);
 
   const canForce = ['admin', 'manager'].includes(user.role);
   const canSeeEmailLog = ['admin', 'manager'].includes(user.role);
@@ -34,7 +35,7 @@ export default function Manifests() {
     try {
       const r = await api.upload('/api/manifests/upload', fd);
       setResult(r);
-      toast(`Manifest амжилттай: ${r.flight.flight_number} (+${r.added} / ~${r.updated} / -${r.removed})`, 'success');
+      toast(`Manifest v${r.version}: ${r.flight.flight_number} (+${r.added} / ~${r.updated} / -${r.removed})`, 'success');
       load();
     } catch (ex) {
       setResult(ex.data || { ok: false, error: ex.message });
@@ -93,7 +94,20 @@ export default function Manifests() {
           <div>
             {result.ok ? (
               <>
-                <b>{result.flight.flight_number}</b> — {result.added} нэмэгдсэн, {result.updated} шинэчлэгдсэн, {result.removed} хасагдсан.
+                <b>{result.flight.flight_number}</b> — Хувилбар <b>v{result.version}</b>:
+                {' '}{result.added} нэмэгдсэн, {result.updated} шинэчлэгдсэн, {result.removed} хасагдсан
+                {result.restored > 0 && <>, {result.restored} сэргээгдсэн</>}.
+                {' '}Manifest-д {result.diff?.total_in_manifest} хүн — идэвхтэй зорчигч <b>{result.active_after}</b>.
+                {result.diff?.added?.length > 0 && (
+                  <div style={{ marginTop: 4, fontSize: 12.5 }}>
+                    <b>+ Нэмэгдсэн:</b> {result.diff.added.map((a) => a.name).join(', ')}
+                  </div>
+                )}
+                {result.diff?.removed?.length > 0 && (
+                  <div style={{ marginTop: 2, fontSize: 12.5 }}>
+                    <b>− Хасагдсан:</b> {result.diff.removed.map((a) => a.name).join(', ')}
+                  </div>
+                )}
                 {result.warnings?.length > 0 && (
                   <ul style={{ margin: '6px 0 0 16px' }}>{result.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
                 )}
@@ -119,26 +133,83 @@ export default function Manifests() {
           <div className="tablewrap">
             <table className="tbl">
               <thead><tr>
-                <th>Огноо</th><th>Файл</th><th>Эх үүсвэр</th><th>Нислэг</th><th>Зорчигч</th><th>Төлөв</th><th>Тайлбар</th>
+                <th>Огноо</th><th>Файл</th><th>Эх үүсвэр</th><th>Нислэг</th><th>Хувилбар</th><th>Зорчигч</th><th>Төлөв</th><th>Тайлбар</th>
               </tr></thead>
               <tbody>
-                {!manifests && <tr><td colSpan={7}><Spinner /></td></tr>}
-                {manifests?.length === 0 && <tr><td colSpan={7}><div className="empty">Manifest ирээгүй байна</div></td></tr>}
-                {manifests?.map((m) => (
-                  <tr key={m.id}>
-                    <td className="num" style={{ fontSize: 12.5 }}>{fmtDateTime(m.created_at)}</td>
-                    <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12.5 }}>{m.filename}</td>
-                    <td>{m.source === 'email'
-                      ? <span className="badge teal">EMAIL{m.email_from ? ` · ${m.email_from}` : ''}</span>
-                      : <span className="badge gray">UPLOAD{m.imported_by_name ? ` · ${m.imported_by_name}` : ''}</span>}</td>
-                    <td>{m.flight_number ? <b>{m.flight_number}</b> : '—'}</td>
-                    <td className="num">{m.passenger_count || '—'}</td>
-                    <td>{m.status === 'ACCEPTED' ? <span className="badge green">ACCEPTED</span> : <span className="badge red">REJECTED</span>}</td>
-                    <td style={{ fontSize: 12, color: 'var(--muted)', maxWidth: 300 }}>
-                      {m.error || (m.warnings?.length ? m.warnings.join('; ') : '—')}
-                    </td>
-                  </tr>
-                ))}
+                {!manifests && <tr><td colSpan={8}><Spinner /></td></tr>}
+                {manifests?.length === 0 && <tr><td colSpan={8}><div className="empty">Manifest ирээгүй байна</div></td></tr>}
+                {manifests?.map((m) => {
+                  const d = m.diff || {};
+                  const hasDiff = (d.added?.length || 0) + (d.removed?.length || 0) + (d.restored?.length || 0) > 0;
+                  return (
+                    <React.Fragment key={m.id}>
+                      <tr style={hasDiff ? { cursor: 'pointer' } : undefined}
+                        onClick={() => hasDiff && setOpenDiff(openDiff === m.id ? null : m.id)}>
+                        <td className="num" style={{ fontSize: 12.5 }}>{fmtDateTime(m.created_at)}</td>
+                        <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12.5 }}>{m.filename}</td>
+                        <td>{m.source === 'email'
+                          ? <span className="badge teal">EMAIL{m.email_from ? ` · ${m.email_from}` : ''}</span>
+                          : <span className="badge gray">UPLOAD{m.imported_by_name ? ` · ${m.imported_by_name}` : ''}</span>}</td>
+                        <td>{m.flight_number ? <b>{m.flight_number}</b> : '—'}</td>
+                        <td>
+                          {m.version
+                            ? <span className={`badge ${m.is_active ? 'blue' : 'gray'}`}>
+                                v{m.version}{m.is_active ? ' · идэвхтэй' : ''}
+                              </span>
+                            : '—'}
+                          {Number(m.revision_count) > 1 && m.is_active && (
+                            <span style={{ fontSize: 11, color: 'var(--faint)', marginLeft: 5 }}>{m.revision_count} удаа</span>
+                          )}
+                        </td>
+                        <td className="num">
+                          {m.passenger_count || '—'}
+                          {d.active_after !== undefined && d.active_after !== m.passenger_count && (
+                            <span style={{ fontSize: 11, color: 'var(--faint)' }}> → {d.active_after} идэвхтэй</span>
+                          )}
+                        </td>
+                        <td>{m.status === 'ACCEPTED' ? <span className="badge green">ACCEPTED</span> : <span className="badge red">REJECTED</span>}</td>
+                        <td style={{ fontSize: 12, color: 'var(--muted)', maxWidth: 260 }}>
+                          {hasDiff && (
+                            <span style={{ whiteSpace: 'nowrap' }}>
+                              {d.added?.length > 0 && <span style={{ color: 'var(--green)' }}>+{d.added.length} </span>}
+                              {d.removed?.length > 0 && <span style={{ color: 'var(--red)' }}>−{d.removed.length} </span>}
+                              {d.restored?.length > 0 && <span style={{ color: 'var(--blue)' }}>↺{d.restored.length} </span>}
+                              {openDiff === m.id ? '▲' : '▼'}
+                            </span>
+                          )}
+                          {!hasDiff && (m.error || (m.warnings?.length ? m.warnings.join('; ') : '—'))}
+                        </td>
+                      </tr>
+                      {openDiff === m.id && (
+                        <tr><td colSpan={8} style={{ background: 'var(--bg)', fontSize: 12.5 }}>
+                          {d.added?.length > 0 && (
+                            <div style={{ margin: '4px 0' }}><b style={{ color: 'var(--green)' }}>+ Нэмэгдсэн ({d.added.length}):</b>{' '}
+                              {d.added.map((x) => `${x.name}${x.employee_id ? ` (${x.employee_id})` : ''}`).join(', ')}</div>
+                          )}
+                          {d.removed?.length > 0 && (
+                            <div style={{ margin: '4px 0' }}><b style={{ color: 'var(--red)' }}>− Хасагдсан ({d.removed.length}):</b>{' '}
+                              {d.removed.map((x) => `${x.name}${x.employee_id ? ` (${x.employee_id})` : ''}`).join(', ')}</div>
+                          )}
+                          {d.restored?.length > 0 && (
+                            <div style={{ margin: '4px 0' }}><b style={{ color: 'var(--blue)' }}>↺ Сэргээгдсэн ({d.restored.length}):</b>{' '}
+                              {d.restored.map((x) => x.name).join(', ')}</div>
+                          )}
+                          {d.kept_despite_removal?.length > 0 && (
+                            <div style={{ margin: '4px 0', color: 'var(--muted)' }}><b>! Хасагдаагүй (аль хэдийн бүртгэгдсэн):</b>{' '}
+                              {d.kept_despite_removal.map((x) => `${x.name} (${x.status})`).join(', ')}</div>
+                          )}
+                          {d.changed?.length > 0 && (
+                            <div style={{ margin: '4px 0', color: 'var(--muted)' }}><b>~ Мэдээлэл өөрчлөгдсөн:</b>{' '}
+                              {d.changed.map((x) => `${x.name} (${x.fields.join(', ')})`).join(', ')}</div>
+                          )}
+                          <div style={{ margin: '4px 0', color: 'var(--faint)' }}>
+                            Manifest-д {d.total_in_manifest} хүн · импортын дараах идэвхтэй зорчигч {d.active_after}
+                          </div>
+                        </td></tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>

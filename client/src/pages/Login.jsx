@@ -6,6 +6,8 @@ import { LogoMark, FullLogo } from '../components/Logo.jsx';
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [totp, setTotp] = useState('');
+  const [needTotp, setNeedTotp] = useState(false);
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -13,11 +15,17 @@ export default function Login({ onLogin }) {
     e.preventDefault();
     setBusy(true); setErr(null);
     try {
-      const d = await api.post('/api/auth/login', { username, password });
+      const d = await api.post('/api/auth/login', { username, password, ...(totp ? { totp } : {}) });
       setToken(d.token);
       onLogin(d.user);
     } catch (ex) {
-      setErr(ex.message);
+      // 2FA-той данс: нууц үг зөв бол сервер totp_required буцаана
+      if (ex.data?.totp_required) {
+        setNeedTotp(true);
+        setErr(totp ? ex.message : null);
+      } else {
+        setErr(ex.message);
+      }
     } finally {
       setBusy(false);
     }
@@ -51,7 +59,15 @@ export default function Login({ onLogin }) {
             <label>Нууц үг</label>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
           </div>
-          <button className="btn lg block" disabled={busy || !username || !password}>
+          {needTotp && (
+            <div className="field">
+              <label>Баталгаажуулах код (2FA)</label>
+              <input inputMode="numeric" maxLength={6} placeholder="6 оронтой код" value={totp}
+                onChange={(e) => setTotp(e.target.value.replace(/\D/g, ''))} autoFocus />
+              <span className="hint">Authenticator аппаас кодоо оруулна уу</span>
+            </div>
+          )}
+          <button className="btn lg block" disabled={busy || !username || !password || (needTotp && totp.length !== 6)}>
             {busy ? 'Нэвтэрч байна…' : 'Нэвтрэх'}
           </button>
           <div style={{ marginTop: 16, fontSize: 12, color: 'var(--faint)', textAlign: 'center' }}>

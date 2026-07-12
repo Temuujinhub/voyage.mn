@@ -18,7 +18,7 @@ router.post('/scan', requireRole('agent'), async (req, res) => {
 router.get('/flights/:id/status', async (req, res) => {
   const { rows: counts } = await q(
     `SELECT status, count(*) AS n FROM passengers
-      WHERE flight_id = $1 AND status <> 'OFFLOADED' AND NOT waitlisted GROUP BY status`,
+      WHERE flight_id = $1 AND active AND status <> 'OFFLOADED' AND NOT waitlisted GROUP BY status`,
     [req.params.id]
   );
   const { rows: recent } = await q(

@@ -99,6 +99,8 @@ export async function parseManifestXlsx(buffer) {
         else if (t.includes('pick-up') || t.includes('pickup')) colIndex.pickup = col;
         else if (t.includes('sap')) colIndex.sap = col;
         else if (t.includes('mobile') || t.includes('phone')) colIndex.mobile = col;
+        // OT manifests label the contact-number column "C No"
+        else if (t === 'c no' || t === 'c.no' || t.includes('contact')) colIndex.mobile = colIndex.mobile || col;
       });
     }
   });

@@ -20,6 +20,73 @@ function Section({ title, desc, children, onSave, busy }) {
 
 const STATION_LABEL = { '': 'Бүх буудал', UB: 'UB — Чингис хаан', OT: 'OT — Ханбумбат' };
 
+function TwoFactorSection({ toast }) {
+  const [enabled, setEnabled] = useState(null);
+  const [setup, setSetup] = useState(null); // {secret, qr}
+  const [code, setCode] = useState('');
+  const [pw, setPw] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api.get('/api/auth/me').then((d) => setEnabled(!!d.user.totp_enabled)).catch(() => setEnabled(false));
+  }, []);
+
+  const begin = async () => {
+    setBusy(true);
+    try { setSetup(await api.post('/api/auth/totp/setup', {})); setCode(''); }
+    catch (ex) { toast(ex.message, 'error'); } finally { setBusy(false); }
+  };
+  const enable = async () => {
+    setBusy(true);
+    try {
+      await api.post('/api/auth/totp/enable', { secret: setup.secret, code });
+      toast('2FA идэвхжлээ', 'success'); setEnabled(true); setSetup(null);
+    } catch (ex) { toast(ex.message, 'error'); } finally { setBusy(false); }
+  };
+  const disable = async () => {
+    setBusy(true);
+    try {
+      await api.post('/api/auth/totp/disable', { password: pw });
+      toast('2FA унтарлаа', 'success'); setEnabled(false); setPw('');
+    } catch (ex) { toast(ex.message, 'error'); } finally { setBusy(false); }
+  };
+
+  if (enabled === null) return null;
+  return (
+    <Section title="Хоёр шатлалт баталгаажуулалт (2FA)" desc="Таны дансанд нэвтрэхэд нууц үгээс гадна authenticator аппын 6 оронтой код шаардана">
+      {enabled ? (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span className="badge green">Идэвхтэй</span>
+          <input type="password" placeholder="Нууц үгээ оруулж унтраана" value={pw}
+            onChange={(e) => setPw(e.target.value)} style={{ maxWidth: 260 }} />
+          <button className="btn ghost sm" style={{ color: 'var(--red)' }} disabled={!pw || busy} onClick={disable}>Унтраах</button>
+        </div>
+      ) : setup ? (
+        <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <img src={setup.qr} alt="TOTP QR" width={180} height={180} style={{ borderRadius: 8, border: '1px solid var(--line)' }} />
+          <div style={{ flex: 1, minWidth: 240 }}>
+            <p style={{ fontSize: 13, margin: '0 0 8px' }}>
+              1. Google Authenticator / Microsoft Authenticator аппаар QR-ийг уншуулна.<br />
+              2. Аппын үзүүлж буй 6 оронтой кодыг доор оруулж баталгаажуулна.
+            </p>
+            <p style={{ fontSize: 11.5, color: 'var(--faint)', fontFamily: 'var(--mono)', margin: '0 0 10px', wordBreak: 'break-all' }}>
+              Гар аргаар: {setup.secret}
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input inputMode="numeric" maxLength={6} placeholder="000000" value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} style={{ maxWidth: 140 }} />
+              <button className="btn sm" disabled={code.length !== 6 || busy} onClick={enable}>Идэвхжүүлэх</button>
+              <button className="btn ghost sm" onClick={() => setSetup(null)}>Болих</button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <button className="btn sm" disabled={busy} onClick={begin}><Icons.shield size={14} />Тохируулж эхлэх</button>
+      )}
+    </Section>
+  );
+}
+
 function PrinterSection({ toast }) {
   const [catalog, setCatalog] = useState([]);
   const [printers, setPrinters] = useState(null);
@@ -245,6 +312,8 @@ export default function Settings() {
           </label>
         </div>
       </Section>
+
+      <TwoFactorSection toast={toast} />
 
       <PrinterSection toast={toast} />
 

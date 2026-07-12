@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { api, setToken, getToken, setUnauthorizedHandler } from './api.js';
 import { resetSocket, getSocket } from './socket.js';
@@ -6,18 +6,21 @@ import { Icons, ToastProvider } from './ui.jsx';
 import { BrandBlock } from './components/Logo.jsx';
 import { ROLE_MN } from './format.js';
 
+// Login and the public self check-in load eagerly (first paint); the staff
+// pages are code-split so the passenger-facing landing stays light.
 import Login from './pages/Login.jsx';
-import Dashboard from './pages/Dashboard.jsx';
-import Flights from './pages/Flights.jsx';
-import FlightDetail from './pages/FlightDetail.jsx';
-import Checkin from './pages/Checkin.jsx';
-import Gate from './pages/Gate.jsx';
-import Manifests from './pages/Manifests.jsx';
-import Reports from './pages/Reports.jsx';
-import Users from './pages/Users.jsx';
-import Settings from './pages/Settings.jsx';
-import System from './pages/System.jsx';
 import SelfCheckin from './pages/SelfCheckin.jsx';
+const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
+const Flights = lazy(() => import('./pages/Flights.jsx'));
+const FlightDetail = lazy(() => import('./pages/FlightDetail.jsx'));
+const Checkin = lazy(() => import('./pages/Checkin.jsx'));
+const Gate = lazy(() => import('./pages/Gate.jsx'));
+const Manifests = lazy(() => import('./pages/Manifests.jsx'));
+const Reports = lazy(() => import('./pages/Reports.jsx'));
+const Users = lazy(() => import('./pages/Users.jsx'));
+const Settings = lazy(() => import('./pages/Settings.jsx'));
+const System = lazy(() => import('./pages/System.jsx'));
+const People = lazy(() => import('./pages/People.jsx'));
 
 export const AuthCtx = React.createContext(null);
 
@@ -30,6 +33,7 @@ const NAV = [
   { to: '/staff/gate', label: 'Gate / Скан', icon: 'scan', roles: ['admin', 'manager', 'agent'] },
   { to: '/staff/manifests', label: 'Manifest', icon: 'upload', roles: ['admin', 'manager', 'ot_staff'] },
   { to: '/staff/reports', label: 'Тайлан', icon: 'chart', roles: ['admin', 'manager'] },
+  { to: '/staff/people', label: 'Зорчигчийн сан', icon: 'users', roles: ['admin', 'manager'] },
   { to: '/staff/users', label: 'Хэрэглэгчид', icon: 'users', roles: ['admin'], section: 'СИСТЕМ' },
   { to: '/staff/system', label: 'Health / Audit', icon: 'shield', roles: ['admin'] },
   { to: '/staff/settings', label: 'Тохиргоо', icon: 'settings', roles: ['admin'] },
@@ -127,19 +131,22 @@ function StaffApp() {
     <AuthCtx.Provider value={user}>
       <Shell user={user} onLogout={logout}>
         {/* StaffApp is mounted at /staff/*, so these paths are relative to /staff */}
-        <Routes>
-          <Route index element={user.role === 'ot_staff' ? <Navigate to="/staff/manifests" /> : <Dashboard />} />
-          <Route path="flights" element={<Flights />} />
-          <Route path="flights/:id" element={<FlightDetail />} />
-          <Route path="checkin" element={<Checkin />} />
-          <Route path="gate" element={<Gate />} />
-          <Route path="manifests" element={<Manifests />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="users" element={<Users />} />
-          <Route path="system" element={<System />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to={home} />} />
-        </Routes>
+        <Suspense fallback={<div className="spin" style={{ marginTop: 120 }} />}>
+          <Routes>
+            <Route index element={user.role === 'ot_staff' ? <Navigate to="/staff/manifests" /> : <Dashboard />} />
+            <Route path="flights" element={<Flights />} />
+            <Route path="flights/:id" element={<FlightDetail />} />
+            <Route path="checkin" element={<Checkin />} />
+            <Route path="gate" element={<Gate />} />
+            <Route path="manifests" element={<Manifests />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="people" element={<People />} />
+            <Route path="users" element={<Users />} />
+            <Route path="system" element={<System />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to={home} />} />
+          </Routes>
+        </Suspense>
       </Shell>
     </AuthCtx.Provider>
   );
