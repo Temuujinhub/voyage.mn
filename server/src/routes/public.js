@@ -14,6 +14,25 @@ const otpLimiter = rateLimit({ windowMs: 10 * 60 * 1000, limit: 12, standardHead
 const publicLimiter = rateLimit({ windowMs: 60 * 1000, limit: 120, standardHeaders: true });
 router.use(publicLimiter);
 
+// Resolve the registered phone for an SAP / employee id on an upcoming flight,
+// so a passenger can authenticate by employee id (the OTP still goes to their
+// manifested phone — the number never leaves the server).
+async function phoneForEmployeeId(employeeId) {
+  const { rows } = await q(
+    `SELECT p.phone, p.full_name, p.title
+       FROM passengers p JOIN flights f ON f.id = p.flight_id
+      WHERE p.employee_id = $1
+        AND p.phone IS NOT NULL
+        AND p.status <> 'OFFLOADED'
+        AND f.status <> 'CANCELLED'
+        AND f.departure_ts > now() - interval '6 hours'
+        AND f.departure_ts < now() + interval '48 hours'
+      ORDER BY f.departure_ts LIMIT 1`,
+    [String(employeeId).trim()]
+  );
+  return rows[0] || null;
+}
+
 // Upcoming flights the phone number is manifested on (limited fields).
 async function upcomingFlightsForPhone(phone) {
   const { rows } = await q(
@@ -33,36 +52,54 @@ async function upcomingFlightsForPhone(phone) {
   return rows;
 }
 
+// Resolve the target phone from the request — either a phone number directly,
+// or an SAP/employee id whose manifested phone we look up server-side.
+async function resolveTarget(body) {
+  if (body?.employee_id) {
+    const rec = await phoneForEmployeeId(body.employee_id);
+    if (!rec) return { error: 'Энэ SAP дугаартай зорчигч ойрын нислэгийн бүртгэлд (утасны дугаартай) олдсонгүй.' };
+    return { phone: rec.phone, full_name: rec.full_name, title: rec.title, viaSap: true };
+  }
+  const phone = normalizePhone(body?.phone);
+  if (!phone || phone.length < 9) return { error: 'Утасны дугаараа зөв оруулна уу' };
+  return { phone };
+}
+
 router.post('/otp/request', otpLimiter, async (req, res) => {
-  const phone = normalizePhone(req.body?.phone);
-  if (!phone || phone.length < 9) return res.status(400).json({ error: 'Утасны дугаараа зөв оруулна уу' });
-  const flights = await upcomingFlightsForPhone(phone);
+  const t = await resolveTarget(req.body);
+  if (t.error) return res.status(400).json({ error: t.error });
+  const flights = await upcomingFlightsForPhone(t.phone);
   if (flights.length === 0) {
     return res.status(404).json({
-      error: 'Энэ дугаартай зорчигч ойрын нислэгийн бүртгэлд олдсонгүй. Бүртгэлийн ажилтанд хандана уу.',
+      error: 'Энэ мэдээллээр зорчигч ойрын нислэгийн бүртгэлд олдсонгүй. Бүртгэлийн ажилтанд хандана уу.',
     });
   }
   const p = flights[0];
   const nameParts = p.full_name.split(/\s+/);
   const maskedName = nameParts.map((s) => (s[0] || '') + '*****').join(' ');
-  const result = await requestOtp(phone);
-  await audit({ ip: req.ip }, 'OTP_REQUESTED', 'passenger', p.passenger_id, { phone_last4: phone.slice(-4) });
+  const result = await requestOtp(t.phone);
+  await audit({ ip: req.ip }, 'OTP_REQUESTED', 'passenger', p.passenger_id, {
+    phone_last4: t.phone.slice(-4), via: t.viaSap ? 'sap' : 'phone',
+  });
   res.json({
     ok: true,
     maskedName: `${p.title ? p.title + ' ' : ''}${maskedName}`,
+    // when logging in by SAP, tell the passenger which phone the code went to
+    maskedPhone: t.viaSap ? `••••${t.phone.slice(-4)}` : undefined,
     // dev mode only — removed automatically once an SMS gateway is enabled
     devCode: result.devCode,
   });
 });
 
 router.post('/otp/verify', otpLimiter, async (req, res) => {
-  const phone = normalizePhone(req.body?.phone);
   const { code } = req.body || {};
-  if (!phone || !code) return res.status(400).json({ error: 'Утас болон код шаардлагатай' });
-  const result = await verifyOtp(phone, code);
+  const t = await resolveTarget(req.body);
+  if (t.error) return res.status(400).json({ error: t.error });
+  if (!code) return res.status(400).json({ error: 'Код шаардлагатай' });
+  const result = await verifyOtp(t.phone, code);
   if (!result.ok) return res.status(400).json({ error: result.reason });
-  await audit({ ip: req.ip }, 'OTP_VERIFIED', 'passenger', phone.slice(-4), {});
-  res.json({ token: signPassengerToken(phone) });
+  await audit({ ip: req.ip }, 'OTP_VERIFIED', 'passenger', t.phone.slice(-4), {});
+  res.json({ token: signPassengerToken(t.phone) });
 });
 
 router.get('/my-flights', passengerAuth, async (req, res) => {

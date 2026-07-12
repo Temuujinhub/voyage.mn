@@ -93,7 +93,7 @@ export default function FlightDetail() {
   return (
     <>
       <div className="page-head">
-        <Link to="/flights" className="btn ghost sm">← Нислэгүүд</Link>
+        <Link to="/staff/flights" className="btn ghost sm">← Нислэгүүд</Link>
         <h1>{flight.flight_number}</h1>
         <FlightBadge status={flight.status} />
         {flight.delay_minutes > 0 && <span className="badge amber">+{flight.delay_minutes} мин хойшилсон</span>}
@@ -187,7 +187,7 @@ export default function FlightDetail() {
                     <td className="num">{Number(p.bag_count) > 0 ? `${p.bag_count}ш / ${Math.round(p.bag_weight)}кг` : '—'}</td>
                     <td><PaxBadge status={p.status} /></td>
                     <td>
-                      <button className="btn ghost sm" onClick={() => navigate(`/checkin?pax=${p.id}`)}>
+                      <button className="btn ghost sm" onClick={() => navigate(`/staff/checkin?pax=${p.id}`)}>
                         {p.status === 'PENDING' ? 'Check-in' : 'Нээх'}
                       </button>
                     </td>

@@ -1,45 +1,48 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Aero Mongolia">
   <defs>
-    <clipPath id="c"><circle cx="100" cy="100" r="96"/></clipPath>
-    <path id="arc" d="M 18 100 A 84 84 0 0 0 178 136" fill="none"/>
+    <clipPath id="c"><circle cx="100" cy="100" r="97"/></clipPath>
+    <path id="arc" d="M 34 152 A 80 80 0 0 0 166 152" fill="none"/>
   </defs>
-  <circle cx="100" cy="100" r="96" fill="#39b7e9"/>
+  <circle cx="100" cy="100" r="97" fill="#2aa8df"/>
   <g clip-path="url(#c)">
-    <!-- white head + neck silhouette -->
-    <path fill="#ffffff" d="
-      M 78 16
-      C 112 4 144 22 152 52
-      C 158 76 152 100 148 124
-      C 145 148 147 174 151 200
-      L 62 200
-      C 68 172 66 148 58 130
-      C 52 116 42 108 34 99
-      C 28 92 26 86 29 80
-      C 24 72 27 63 36 61
-      C 40 48 50 36 62 27
-      C 67 22 72 18 78 16 Z"/>
-    <!-- hooked beak -->
-    <path fill="#ffffff" stroke="#243a8f" stroke-width="6" stroke-linejoin="round" d="
-      M 44 60
-      C 32 54 20 58 16 68
-      C 13 78 20 87 30 88
-      C 27 94 30 101 38 101
-      C 46 101 51 93 52 86"/>
-    <path fill="none" stroke="#243a8f" stroke-width="4.5" stroke-linecap="round" d="M 20 82 C 34 84 48 88 58 96"/>
-    <!-- fierce brow: slanted heavy stroke from beak over the eye -->
-    <path fill="none" stroke="#243a8f" stroke-width="10" stroke-linecap="round" d="M 42 60 C 62 50 88 48 104 56"/>
-    <!-- eye tucked under brow -->
-    <circle cx="80" cy="70" r="14" fill="#243a8f"/>
-    <circle cx="80" cy="70" r="8" fill="#ffffff"/>
-    <circle cx="77" cy="67" r="4.2" fill="#243a8f"/>
-    <!-- crown/neck sweep -->
-    <path fill="none" stroke="#243a8f" stroke-width="7" stroke-linecap="round" d="
-      M 78 16
-      C 112 4 144 22 152 52
-      C 158 76 152 100 148 124
-      C 145 148 147 174 151 200"/>
+    <!-- Fierce falcon head, profile facing LEFT, deep-navy silhouette -->
+    <path fill="#182a75" d="
+      M 158 46
+      C 140 34 118 33 100 42
+      C 96 40 90 40 86 44
+      L 70 52
+      C 60 48 49 53 47 63
+      L 40 66
+      C 30 63 18 69 18 79
+      C 18 88 27 93 37 90
+      C 34 96 39 103 48 101
+      L 60 96
+      C 58 108 55 120 55 133
+      C 55 152 63 170 82 179
+      L 170 179
+      C 170 150 162 128 160 110
+      C 174 95 178 70 170 56
+      C 167 51 163 48 158 46 Z"/>
+    <!-- sharp brow ridge: light notch separating crown from eye -->
+    <path fill="#2aa8df" d="M 66 56 C 82 50 100 50 114 57 C 100 60 86 63 74 71 C 71 65 68 60 66 56 Z"/>
+    <!-- hooked raptor beak -->
+    <path fill="#182a75" d="
+      M 47 63 L 40 66
+      C 30 63 18 69 18 79
+      C 18 88 27 93 37 90
+      C 41 88 44 83 44 78
+      C 50 80 57 78 60 72
+      C 56 68 51 65 47 63 Z"/>
+    <!-- eye -->
+    <circle cx="82" cy="72" r="15.5" fill="#2aa8df"/>
+    <circle cx="82" cy="72" r="15.5" fill="none" stroke="#182a75" stroke-width="3"/>
+    <circle cx="80" cy="71" r="8" fill="#182a75"/>
+    <circle cx="77" cy="68" r="2.6" fill="#cdeaf8"/>
+    <!-- two feather sweeps on the breast -->
+    <path fill="none" stroke="#2aa8df" stroke-width="3.4" stroke-linecap="round" d="M 96 150 C 118 137 138 137 156 148"/>
+    <path fill="none" stroke="#2aa8df" stroke-width="3.4" stroke-linecap="round" d="M 92 166 C 116 152 140 152 158 164"/>
   </g>
-  <text font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="bold" fill="#243a8f" letter-spacing="2">
-    <textPath href="#arc" startOffset="8">AERO MONGOLIA</textPath>
+  <text font-family="Arial, Helvetica, sans-serif" font-size="16.5" font-weight="bold" fill="#182a75" letter-spacing="2.4">
+    <textPath href="#arc" startOffset="14">AERO MONGOLIA</textPath>
   </text>
 </svg>
