@@ -1,18 +1,30 @@
 import React from 'react';
 
-// The brand mark is served from /logo.svg (client/public/logo.svg) so the
-// OFFICIAL Aero Mongolia artwork can be dropped in without touching code —
-// replace that one file and it updates the sidebar, login, self check-in,
-// boarding pass and favicon everywhere. Provide an <img> with a fixed square
-// box; the file itself is the roundel.
-export function LogoMark({ size = 40, text = true }) {
+// Official Aero Mongolia artwork lives in client/public:
+//   /logo.png       — full horizontal lockup (roundel + wordmark + tagline)
+//   /logo-mark.png  — square roundel only (cropped from the lockup)
+//   /logo-full.png  — trimmed horizontal lockup for wide headers
+// LogoMark renders the square roundel; FullLogo renders the horizontal lockup.
+
+export function LogoMark({ size = 40 }) {
   return (
     <img
-      src="/logo.svg"
+      src="/logo-mark.png"
       width={size}
       height={size}
       alt="Aero Mongolia"
       style={{ display: 'block', objectFit: 'contain', flex: `0 0 ${size}px` }}
+    />
+  );
+}
+
+// Horizontal lockup for login / self check-in headers where width allows.
+export function FullLogo({ height = 48 }) {
+  return (
+    <img
+      src="/logo-full.png"
+      alt="Aero Mongolia — Mongolia Starts Here"
+      style={{ display: 'block', height, width: 'auto', maxWidth: '100%' }}
     />
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { api, setToken } from '../api.js';
 import { Icons } from '../ui.jsx';
-import { LogoMark } from '../components/Logo.jsx';
+import { LogoMark, FullLogo } from '../components/Logo.jsx';
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -35,8 +35,8 @@ export default function Login({ onLogin }) {
       </div>
       <div className="hero-body" style={{ justifyContent: 'center' }}>
         <form className="hero-card" onSubmit={submit}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
-            <LogoMark size={84} />
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
+            <FullLogo height={54} />
           </div>
           <h2 style={{ fontSize: 19, marginBottom: 4, textAlign: 'center' }}>Ажилтны нэвтрэлт</h2>
           <p style={{ color: 'var(--muted)', margin: '0 0 18px', fontSize: 13 }}>
