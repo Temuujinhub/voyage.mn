@@ -23,6 +23,8 @@ import reportRoutes from './routes/reports.js';
 import settingsRoutes from './routes/settings.js';
 import aircraftRoutes from './routes/aircraft.js';
 import publicRoutes from './routes/public.js';
+import adminRoutes from './routes/admin.js';
+import printerRoutes from './routes/printers.js';
 
 const app = express();
 app.set('trust proxy', 1); // behind nginx
@@ -60,6 +62,8 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/aircraft', aircraftRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/printers', printerRoutes);
 
 // serve the built SPA
 const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');

@@ -16,6 +16,7 @@ import Manifests from './pages/Manifests.jsx';
 import Reports from './pages/Reports.jsx';
 import Users from './pages/Users.jsx';
 import Settings from './pages/Settings.jsx';
+import System from './pages/System.jsx';
 import SelfCheckin from './pages/SelfCheckin.jsx';
 
 export const AuthCtx = React.createContext(null);
@@ -30,6 +31,7 @@ const NAV = [
   { to: '/staff/manifests', label: 'Manifest', icon: 'upload', roles: ['admin', 'manager', 'ot_staff'] },
   { to: '/staff/reports', label: 'Тайлан', icon: 'chart', roles: ['admin', 'manager'] },
   { to: '/staff/users', label: 'Хэрэглэгчид', icon: 'users', roles: ['admin'], section: 'СИСТЕМ' },
+  { to: '/staff/system', label: 'Health / Audit', icon: 'shield', roles: ['admin'] },
   { to: '/staff/settings', label: 'Тохиргоо', icon: 'settings', roles: ['admin'] },
 ];
 
@@ -134,6 +136,7 @@ function StaffApp() {
           <Route path="manifests" element={<Manifests />} />
           <Route path="reports" element={<Reports />} />
           <Route path="users" element={<Users />} />
+          <Route path="system" element={<System />} />
           <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Navigate to={home} />} />
         </Routes>
