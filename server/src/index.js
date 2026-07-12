@@ -37,6 +37,11 @@ app.use(
         scriptSrc: ["'self'"],
         connectSrc: ["'self'", 'ws:', 'wss:'],
         mediaSrc: ["'self'", 'blob:'], // camera preview for the gate scanner
+        // Do NOT force subresources onto https — the app is reachable over plain
+        // http:// until TLS is set up, and helmet's default upgrade-insecure-requests
+        // would rewrite every asset URL to https://…:443 (no listener) → blank page.
+        // Once behind HTTPS (certbot) everything is https anyway.
+        upgradeInsecureRequests: null,
       },
     },
   })
