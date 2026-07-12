@@ -13,6 +13,7 @@ if [ ! -f .env ]; then
   echo "ERROR: .env файл алга. cp .env.example .env хийгээд нууц утгуудаа бөглөнө үү." >&2
   exit 1
 fi
+chmod 600 .env # secrets are root-read-only
 
 echo "==> Installing docker & nginx (if missing)…"
 if ! command -v docker > /dev/null; then
@@ -79,6 +80,15 @@ if [ "$healthy" != true ]; then
   docker compose logs --tail=40 app || true
   echo "   DB нууц үг зөрүүлбэл (өмнөх volume): docker compose down -v && docker compose up -d --build"
 fi
+
+echo "==> Nightly DB backup cron…"
+chmod +x "$APP_DIR/deploy/backup.sh"
+cat > /etc/cron.d/voyage-backup <<CRON
+# nightly Voyage DB dump (installed by deploy.sh - edit deploy/backup.sh instead)
+15 3 * * * root bash $APP_DIR/deploy/backup.sh >> /var/log/voyage-backup.log 2>&1
+CRON
+chmod 644 /etc/cron.d/voyage-backup
+echo "   /etc/cron.d/voyage-backup -> 03:15 in /opt/voyage-backups/ (pg_dump)"
 
 echo
 echo "✔ Deploy complete."

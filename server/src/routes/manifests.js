@@ -36,18 +36,34 @@ router.post('/upload', canUpload, upload.single('file'), async (req, res) => {
     filename: req.file.originalname,
     flight: result.flight?.flight_number,
     error: result.error,
+    version: result.version,
     added: result.added, updated: result.updated, removed: result.removed,
+    restored: result.restored, active_after: result.active_after,
   });
   res.status(result.ok ? 200 : 422).json(result);
 });
 
 router.get('/', async (req, res) => {
   const { rows } = await q(
-    `SELECT m.*, f.flight_number, f.departure_ts, f.origin_code, f.dest_code, u.full_name AS imported_by_name
+    `SELECT m.*, f.flight_number, f.departure_ts, f.origin_code, f.dest_code, u.full_name AS imported_by_name,
+       (SELECT count(*) FROM manifests m2 WHERE m2.flight_id = m.flight_id AND m2.status = 'ACCEPTED') AS revision_count
        FROM manifests m
        LEFT JOIN flights f ON f.id = m.flight_id
        LEFT JOIN users u ON u.id = m.imported_by
       ORDER BY m.created_at DESC LIMIT 200`
+  );
+  res.json({ manifests: rows });
+});
+
+// full revision history of one flight (versions, diffs, who/when)
+router.get('/flight/:flightId', async (req, res) => {
+  const { rows } = await q(
+    `SELECT m.id, m.version, m.is_active, m.status, m.passenger_count, m.diff, m.warnings,
+            m.source, m.filename, m.created_at, u.full_name AS imported_by_name
+       FROM manifests m LEFT JOIN users u ON u.id = m.imported_by
+      WHERE m.flight_id = $1
+      ORDER BY m.created_at DESC`,
+    [req.params.flightId]
   );
   res.json({ manifests: rows });
 });

@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import { Server as SocketIO } from 'socket.io';
 
 import cfg from './config.js';
+import { q, pool } from './db/pool.js';
 import { migrate } from './db/migrate.js';
 import { seed } from './db/seed.js';
 import { setIo } from './services/live.js';
@@ -25,6 +26,7 @@ import aircraftRoutes from './routes/aircraft.js';
 import publicRoutes from './routes/public.js';
 import adminRoutes from './routes/admin.js';
 import printerRoutes from './routes/printers.js';
+import peopleRoutes from './routes/people.js';
 
 const app = express();
 app.set('trust proxy', 1); // behind nginx
@@ -64,6 +66,7 @@ app.use('/api/aircraft', aircraftRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/printers', printerRoutes);
+app.use('/api/people', peopleRoutes);
 
 // serve the built SPA
 const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
@@ -106,13 +109,38 @@ io.on('connection', (socket) => {
 });
 setIo(io);
 
+// Audit rows older than a year add nothing operationally — trim daily so the
+// table (and its index) doesn't grow without bound.
+const AUDIT_RETENTION_DAYS = 365;
+function startAuditRetention() {
+  const run = () =>
+    q(`DELETE FROM audit_log WHERE ts < now() - interval '${AUDIT_RETENTION_DAYS} days'`)
+      .then((r) => { if (r.rowCount) console.log(`audit retention: removed ${r.rowCount} rows`); })
+      .catch((err) => console.error('audit retention failed:', err.message));
+  run();
+  setInterval(run, 24 * 3600 * 1000).unref();
+}
+
 async function main() {
   await migrate();
   await seed();
   startMailIngest();
+  startAuditRetention();
   server.listen(cfg.port, () => {
     console.log(`Voyage e-boarding server listening on :${cfg.port} (${cfg.env})`);
   });
+
+  // graceful shutdown: stop accepting connections, let in-flight requests and
+  // DB writes finish before the container is killed (docker sends SIGTERM)
+  const shutdown = (sig) => {
+    console.log(`${sig} received — shutting down`);
+    server.close(() => {
+      pool.end().finally(() => process.exit(0));
+    });
+    setTimeout(() => process.exit(1), 10_000).unref(); // hard stop if close hangs
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 main().catch((err) => {

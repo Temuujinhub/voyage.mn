@@ -9,9 +9,9 @@ const router = Router();
 router.use(authRequired);
 
 const FLIGHT_COLS = `f.*, a.code AS aircraft_code, a.model AS aircraft_model, a.total_seats,
-  (SELECT count(*) FROM passengers p WHERE p.flight_id = f.id AND p.status <> 'OFFLOADED' AND NOT p.waitlisted) AS pax_total,
-  (SELECT count(*) FROM passengers p WHERE p.flight_id = f.id AND p.status IN ('CHECKED_IN','SECURITY_PASSED','BOARDED')) AS pax_checked,
-  (SELECT count(*) FROM passengers p WHERE p.flight_id = f.id AND p.status = 'BOARDED') AS pax_boarded,
+  (SELECT count(*) FROM passengers p WHERE p.flight_id = f.id AND p.active AND p.status <> 'OFFLOADED' AND NOT p.waitlisted) AS pax_total,
+  (SELECT count(*) FROM passengers p WHERE p.flight_id = f.id AND p.active AND p.status IN ('CHECKED_IN','SECURITY_PASSED','BOARDED')) AS pax_checked,
+  (SELECT count(*) FROM passengers p WHERE p.flight_id = f.id AND p.active AND p.status = 'BOARDED') AS pax_boarded,
   (SELECT count(*) FROM baggage b WHERE b.flight_id = f.id) AS bag_count,
   (SELECT COALESCE(sum(b.weight_kg),0) FROM baggage b WHERE b.flight_id = f.id) AS bag_weight`;
 
@@ -154,7 +154,7 @@ router.get('/:id/passengers', async (req, res) => {
     `SELECT p.*,
        (SELECT count(*) FROM baggage b WHERE b.passenger_id = p.id) AS bag_count,
        (SELECT COALESCE(sum(b.weight_kg),0) FROM baggage b WHERE b.passenger_id = p.id) AS bag_weight
-     FROM passengers p WHERE p.flight_id = $1
+     FROM passengers p WHERE p.flight_id = $1 AND p.active
      ORDER BY p.waitlisted, p.seq NULLS LAST, p.full_name`,
     [req.params.id]
   );
@@ -170,7 +170,7 @@ router.get('/:id/seatmap', async (req, res) => {
   if (!rows[0]) return res.status(404).json({ error: 'Нислэг олдсонгүй' });
   const { rows: occupied } = await q(
     `SELECT seat, full_name, status, pnr FROM passengers
-      WHERE flight_id = $1 AND seat IS NOT NULL AND status <> 'OFFLOADED'`,
+      WHERE flight_id = $1 AND active AND seat IS NOT NULL AND status <> 'OFFLOADED'`,
     [req.params.id]
   );
   res.json({ ...rows[0], occupied });
@@ -186,7 +186,7 @@ async function loadFlightWithPax(id) {
     `SELECT p.*,
        (SELECT count(*) FROM baggage b WHERE b.passenger_id = p.id) AS bag_count,
        (SELECT COALESCE(sum(b.weight_kg),0) FROM baggage b WHERE b.passenger_id = p.id) AS bag_weight
-     FROM passengers p WHERE p.flight_id = $1 AND p.status <> 'OFFLOADED'
+     FROM passengers p WHERE p.flight_id = $1 AND p.active AND p.status <> 'OFFLOADED'
      ORDER BY p.waitlisted, p.seq NULLS LAST, p.full_name`,
     [id]
   );

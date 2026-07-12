@@ -50,6 +50,9 @@ export async function checkinPassenger({
     );
     const pax = prow[0];
     if (!pax) throw new CheckinError('NOT_FOUND', 'Зорчигч олдсонгүй');
+    if (pax.active === false) {
+      throw new CheckinError('REMOVED', `${pax.full_name} сүүлийн manifest-ээс хасагдсан — бүртгэх боломжгүй`);
+    }
     if (pax.status !== 'PENDING' && pax.status !== 'OFFLOADED') {
       throw new CheckinError('ALREADY_CHECKED_IN', `${pax.full_name} аль хэдийн бүртгүүлсэн (${pax.status})`);
     }

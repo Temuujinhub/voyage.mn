@@ -1,7 +1,16 @@
+# bounded json-file logs so long-running containers never fill the disk
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: '10m'
+      max-file: '3'
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    <<: *logging
     environment:
       POSTGRES_USER: voyage
       POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
@@ -17,9 +26,16 @@ services:
   app:
     build: .
     restart: unless-stopped
+    <<: *logging
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:4000/api/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     environment:
       NODE_ENV: production
       PORT: 4000

@@ -23,6 +23,7 @@ router.get('/search', async (req, res) => {
        (SELECT count(*) FROM baggage b WHERE b.passenger_id = p.id) AS bag_count
      FROM passengers p JOIN flights f ON f.id = p.flight_id
      WHERE (p.full_name ILIKE $1 OR p.employee_id ILIKE $1 OR p.pnr ILIKE $1 OR p.phone ILIKE $1)
+       AND p.active
        ${flightCond}
      ORDER BY f.departure_ts DESC, p.full_name LIMIT 50`,
     params

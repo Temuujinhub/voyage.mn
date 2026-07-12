@@ -18,11 +18,15 @@ router.use(publicLimiter);
 // so a passenger can authenticate by employee id (the OTP still goes to their
 // manifested phone — the number never leaves the server).
 async function phoneForEmployeeId(employeeId) {
+  // The manifested phone wins; the central directory (people) covers the case
+  // where the manifest row has no number or the passenger changed SIM since.
   const { rows } = await q(
-    `SELECT p.phone, p.full_name, p.title
-       FROM passengers p JOIN flights f ON f.id = p.flight_id
+    `SELECT p.phone, p.full_name, p.title, pe.phone AS directory_phone
+       FROM passengers p
+       JOIN flights f ON f.id = p.flight_id
+       LEFT JOIN people pe ON pe.employee_id = p.employee_id
       WHERE p.employee_id = $1
-        AND p.phone IS NOT NULL
+        AND p.active
         AND p.status <> 'OFFLOADED'
         AND f.status <> 'CANCELLED'
         AND f.departure_ts > now() - interval '6 hours'
@@ -30,7 +34,10 @@ async function phoneForEmployeeId(employeeId) {
       ORDER BY f.departure_ts LIMIT 1`,
     [String(employeeId).trim()]
   );
-  return rows[0] || null;
+  const r = rows[0];
+  if (!r) return null;
+  const phone = r.phone || r.directory_phone;
+  return phone ? { phone, full_name: r.full_name, title: r.title } : null;
 }
 
 // Upcoming flights the phone number is manifested on (limited fields).
@@ -42,6 +49,7 @@ async function upcomingFlightsForPhone(phone) {
             f.status AS flight_status, f.delay_minutes, f.delay_reason
        FROM passengers p JOIN flights f ON f.id = p.flight_id
       WHERE p.phone = $1
+        AND p.active
         AND p.status <> 'OFFLOADED'
         AND f.status <> 'CANCELLED'
         AND f.departure_ts > now() - interval '6 hours'
@@ -110,7 +118,7 @@ router.get('/my-flights', passengerAuth, async (req, res) => {
 router.post('/checkin', passengerAuth, async (req, res) => {
   const { passenger_id, baggage_weight } = req.body || {};
   const { rows } = await q(
-    'SELECT * FROM passengers WHERE id = $1 AND phone = $2',
+    'SELECT * FROM passengers WHERE id = $1 AND phone = $2 AND active',
     [passenger_id, req.passenger.phone]
   );
   const pax = rows[0];
@@ -163,7 +171,7 @@ router.get('/employee/:employeeId/boarding-pass', async (req, res) => {
     `SELECT p.id, p.status, p.seat, p.full_name, p.qr_token,
             f.flight_number, f.origin_code, f.dest_code, f.departure_ts, f.gate, f.delay_minutes
        FROM passengers p JOIN flights f ON f.id = p.flight_id
-      WHERE p.employee_id = $1 AND f.departure_ts > now() - interval '6 hours' AND f.status <> 'CANCELLED'
+      WHERE p.employee_id = $1 AND p.active AND f.departure_ts > now() - interval '6 hours' AND f.status <> 'CANCELLED'
       ORDER BY f.departure_ts LIMIT 1`,
     [req.params.employeeId]
   );
