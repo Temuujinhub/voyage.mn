@@ -164,7 +164,7 @@ export default function SelfCheckin() {
                 )}
                 <button className="btn lg block"
                   disabled={busy || (mode === 'phone' ? phone.replace(/\D/g, '').length < 8 : sap.trim().length < 3)}>
-                  {busy ? 'Шалгаж байна…' : 'Код авах'}
+                  {busy ? 'Шалгаж байна…' : 'Үргэлжлүүлэх'}
                 </button>
               </form>
             )}
